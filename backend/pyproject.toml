@@ -1,0 +1,29 @@
+[project]
+name = "work-time-statistics-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "qisong.yan",email = "qisong.yan@example.local"}
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "fastapi (>=0.139.0,<0.140.0)",
+    "uvicorn[standard] (>=0.51.0,<0.52.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "python-multipart (>=0.0.32,<0.0.33)"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)"
+]
