@@ -7,4 +7,5 @@
 
 - `工时计算.md` — calcNet / floorTo30Min / isEntryCounted / 补时长
 - `推荐下班时间.md` — Dashboard 顶部推荐卡算法
-- `数据存储与备份.md` — localStorage / 导出导入 / data/ 文件夹
+
+后端存储与备份规则见 `../../backend/业务规则/数据存储与备份.md`。

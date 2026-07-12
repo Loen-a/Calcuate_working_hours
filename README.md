@@ -22,7 +22,7 @@
 - **时长统一格式** `X小时Y分钟`（分钟为 0 省略，hours 0 时只留"X分钟"）。
 - **状态色**：盈余 navy / 缺口 plum / 加班 ochre / 周末 plum / 调休 navy / 无效 muted。
 - **主题切换**（`Header` 右上「冷色 / 青绿」）：默认冷调，可切到「淡雅青绿」配色（背景 celadon 绿、计入/盈余 `#2D6B5F`、缺口/休息 淡珊瑚 `#B36B5E`、加班 金棕 `#B0893D`、正文 `SF Pro Display` + 中文 `PingFang SC`）。选择持久化 `localStorage['workhours_theme_v1']`。实现：`data-theme` 属性 + CSS 变量覆盖，**业务组件零改动**。
-- **手动导出 / 导入**（`Header` 右上）：导出 = 下载 `workhours-YYYY-MM-DD.json`；导入 = 选 JSON 覆盖当前 entries（有数据时先 `confirm`）。浏览器**不能**静默写到指定目录——把 Chrome 下载位置改到项目下 `backend/data/` 文件夹可以"默认落盘"。详见 `doc/backend/业务规则/数据存储与备份.md`。
+- **手动导出 / 导入**（`Header` 右上）：导出 = 下载 `workhours-YYYY-MM-DD-HH-mm-ss.json`；导入 = 选 JSON 覆盖当前 entries（有数据时先 `confirm`）。浏览器**不能**静默写到指定目录——把 Chrome 下载位置改到项目下 `backend/data/` 文件夹可以"默认落盘"。详见 `doc/backend/业务规则/数据存储与备份.md`。
 
 ## 业务算法
 
@@ -136,6 +136,6 @@ npm --prefix frontend run build    # 产物：frontend/dist/index.html（双击�
 
 **数据存浏览器、不在文件夹里**——`frontend/dist/index.html` 双击打开时，localStorage 按 `file://` 路径 + 浏览器 profile 锁。**挪文件夹、换浏览器、清除浏览数据都会丢**。所以加了手动备份：
 
-- 顶栏 `导出` → 下载 `workhours-YYYY-MM-DD.json`（建议存到项目下 `backend/data/` 文件夹）
+- 顶栏 `导出` → 下载 `workhours-YYYY-MM-DD-HH-mm-ss.json`（建议存到项目下 `backend/data/` 文件夹）
 - 顶栏 `导入` → 选 JSON 覆盖当前 entries（有数据先 `confirm`）
 - 浏览器**不能**让网页静默写到指定目录——想把"默认到 backend/data/"，在 Chrome 设置 → 下载 → 位置改到 `backend/data/` 文件夹（一次性）。详见 `doc/backend/业务规则/数据存储与备份.md`。
