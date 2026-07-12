@@ -19,7 +19,7 @@
 - Keep `npm --prefix frontend run build` as `tsc --noEmit && vite build`.
 - Export names must be unique to the second: `workhours-YYYY-MM-DD-HH-mm-ss.json`.
 - Do not add ORM, Alembic, localStorage fallback, optimistic writes, or unrelated refactors.
-- The current workspace has no `.git` directory. Do not run `git init` without explicit user authorization. Each task therefore ends with a verification checkpoint; if the user creates a repository before execution, use the suggested commit shown at that checkpoint.
+- The user authorized a local Git repository and isolated worktree for execution. Commit each reviewed task locally; do not configure a remote or push changes.
 
 ## File Structure
 
