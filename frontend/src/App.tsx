@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Entries, HolidayMap, HolidaySource, Theme, WorkEntry } from './lib/types'
 import { dayInfo } from './lib/holidays'
 import { calcNet, fmtDate } from './lib/workHours'
@@ -23,16 +23,34 @@ export default function App() {
   const now = new Date()
   const [viewY, setViewY] = useState(now.getFullYear())
   const [viewM, setViewM] = useState(now.getMonth() + 1)
+  const viewYRef = useRef(now.getFullYear())
+  const holidayRequestGeneration = useRef(0)
+  const mutationRef = useRef<'entry' | 'theme' | 'import' | null>(null)
   const [entries, setEntries] = useState<Entries>({})
   const [hMap, setHMap] = useState<HolidayMap | undefined>(undefined)
   const [holidaySource, setHolidaySource] = useState<HolidaySource | null>(null)
   const [theme, setTheme] = useState<Theme | null>(null)
-  const [themeBusy, setThemeBusy] = useState(false)
+  const [mutationKind, setMutationKind] = useState<'entry' | 'theme' | 'import' | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [modalDate, setModalDate] = useState<string | null>(null)
 
   useAppliedTheme(theme)
+
+  const runMutation = async <T,>(
+    kind: 'entry' | 'theme' | 'import',
+    action: () => Promise<T>,
+  ): Promise<T> => {
+    if (mutationRef.current !== null) throw new Error('正在处理其他数据操作，请稍候')
+    mutationRef.current = kind
+    setMutationKind(kind)
+    try {
+      return await action()
+    } finally {
+      mutationRef.current = null
+      setMutationKind(null)
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -55,16 +73,25 @@ export default function App() {
 
   useEffect(() => {
     let alive = true
+    const generation = ++holidayRequestGeneration.current
     setHMap(undefined)
     setHolidaySource(null)
     getHolidays(viewY)
       .then((result) => {
-        if (!alive) return
+        if (
+          !alive ||
+          generation !== holidayRequestGeneration.current ||
+          viewYRef.current !== viewY
+        ) return
         setHMap(result.holidays)
         setHolidaySource(result.source)
       })
       .catch((error) => {
-        if (!alive) return
+        if (
+          !alive ||
+          generation !== holidayRequestGeneration.current ||
+          viewYRef.current !== viewY
+        ) return
         setLoadError(error instanceof Error ? error.message : String(error))
       })
     return () => {
@@ -73,6 +100,7 @@ export default function App() {
   }, [viewY])
 
   const navMonth = (delta: number) => {
+    if (mutationRef.current === 'import') return
     let nm = viewM + delta
     let ny = viewY
     if (nm < 1) {
@@ -82,18 +110,23 @@ export default function App() {
       nm = 1
       ny++
     }
+    viewYRef.current = ny
     setViewY(ny)
     setViewM(nm)
   }
   const goToday = () => {
+    if (mutationRef.current === 'import') return
     const t = new Date()
+    viewYRef.current = t.getFullYear()
     setViewY(t.getFullYear())
     setViewM(t.getMonth() + 1)
   }
 
   const handlePick = (date: string) => {
+    if (mutationRef.current === 'import') return
     const [py, pm] = date.split('-').map(Number)
     if (py !== viewY || pm !== viewM) {
+      viewYRef.current = py
       setViewY(py)
       setViewM(pm)
       return
@@ -102,51 +135,61 @@ export default function App() {
   }
 
   const upsert = async (date: string, entry: WorkEntry | null) => {
-    if (entry) {
-      const saved = await putEntry(date, entry)
-      setEntries((prev) => ({ ...prev, [date]: saved }))
-    } else {
-      await deleteEntry(date)
-      setEntries((prev) => {
-        const next = { ...prev }
-        delete next[date]
-        return next
-      })
-    }
+    await runMutation('entry', async () => {
+      if (entry) {
+        const saved = await putEntry(date, entry)
+        setEntries((prev) => ({ ...prev, [date]: saved }))
+      } else {
+        await deleteEntry(date)
+        setEntries((prev) => {
+          const next = { ...prev }
+          delete next[date]
+          return next
+        })
+      }
+    })
   }
 
   const handleThemeToggle = async () => {
-    if (themeBusy) return
+    if (mutationRef.current !== null) return
     const nextTheme: Theme = theme === 'cool' ? 'teal' : 'cool'
-    setThemeBusy(true)
     try {
-      const saved = await putPreferences(nextTheme)
+      const saved = await runMutation('theme', () => putPreferences(nextTheme))
       setTheme(saved.theme)
     } catch (error) {
       window.alert('主题保存失败：' + (error instanceof Error ? error.message : String(error)))
-    } finally {
-      setThemeBusy(false)
     }
   }
 
   const handleExport = () => downloadBackup()
 
   const handleImport = async (file: File) => {
+    if (mutationRef.current !== null) return
     if (
       Object.keys(entries).length > 0 &&
       !window.confirm('导入会覆盖数据库中的现有数据，确定？')
     ) return
+    if (mutationRef.current !== null) return
     try {
-      const summary = await importBackup(file)
-      const [loadedEntries, preferences, holidays] = await Promise.all([
-        getEntries(),
-        getPreferences(),
-        getHolidays(viewY),
-      ])
-      setEntries(loadedEntries)
-      setTheme(preferences.theme)
-      setHMap(holidays.holidays)
-      setHolidaySource(holidays.source)
+      const summary = await runMutation('import', async () => {
+        const imported = await importBackup(file)
+        const reloadYear = viewYRef.current
+        const holidayGeneration = ++holidayRequestGeneration.current
+        const [loadedEntries, preferences, holidays] = await Promise.all([
+          getEntries(),
+          getPreferences(),
+          getHolidays(reloadYear),
+        ])
+        if (
+          holidayGeneration !== holidayRequestGeneration.current ||
+          viewYRef.current !== reloadYear
+        ) throw new Error('查看年份已变化，请重试')
+        setEntries(loadedEntries)
+        setTheme(preferences.theme)
+        setHMap(holidays.holidays)
+        setHolidaySource(holidays.source)
+        return imported
+      })
       window.alert('导入成功，共 ' + summary.entries + ' 条记录')
     } catch (error) {
       window.alert('导入失败：' + (error instanceof Error ? error.message : String(error)))
@@ -193,7 +236,8 @@ export default function App() {
         y={viewY}
         m={viewM}
         theme={theme}
-        themeBusy={themeBusy}
+        themeBusy={mutationKind !== null}
+        importBusy={mutationKind === 'import'}
         onPrev={() => navMonth(-1)}
         onNext={() => navMonth(1)}
         onToday={goToday}
@@ -229,6 +273,7 @@ export default function App() {
           date={modalDate}
           entry={entries[modalDate]}
           isRestDay={!!hMap && dayInfo(viewY, viewM, parseInt(modalDate.split('-')[2], 10), hMap).type === 'rest'}
+          externalBusy={mutationKind !== null}
           onClose={() => setModalDate(null)}
           onSave={async (e) => {
             await upsert(modalDate, e)

@@ -6,6 +6,7 @@ interface Props {
   m: number
   theme: Theme
   themeBusy: boolean
+  importBusy: boolean
   onPrev: () => void
   onNext: () => void
   onToday: () => void
@@ -19,6 +20,7 @@ export default function Header({
   m,
   theme,
   themeBusy,
+  importBusy,
   onPrev,
   onNext,
   onToday,
@@ -37,6 +39,7 @@ export default function Header({
         <div className="flex items-center gap-1">
           <button
             onClick={onPrev}
+            disabled={importBusy}
             className="w-11 h-11 grid place-items-center rounded-full text-ink-soft hover:text-ink hover:bg-surface transition-colors text-xl leading-none"
             aria-label="上一月"
           >
@@ -47,6 +50,7 @@ export default function Header({
           </span>
           <button
             onClick={onNext}
+            disabled={importBusy}
             className="w-11 h-11 grid place-items-center rounded-full text-ink-soft hover:text-ink hover:bg-surface transition-colors text-xl leading-none"
             aria-label="下一月"
           >
@@ -54,6 +58,7 @@ export default function Header({
           </button>
           <button
             onClick={onToday}
+            disabled={importBusy}
             className="ml-3 px-4 py-2.5 text-[13px] uppercase tracking-[0.14em] text-ink-soft hover:text-ink font-mono border border-rule rounded-full hover:border-ink-soft transition-colors"
           >
             今天
@@ -67,9 +72,10 @@ export default function Header({
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
+            disabled={themeBusy}
             className="px-4 py-2.5 text-[13px] uppercase tracking-[0.14em] text-ink-soft hover:text-ink font-mono border border-rule rounded-full hover:border-ink-soft transition-colors"
           >
-            导入
+            {importBusy ? '导入中…' : '导入'}
           </button>
           <button
             onClick={onThemeToggle}
@@ -82,6 +88,7 @@ export default function Header({
           <input
             ref={fileInputRef}
             type="file"
+            disabled={themeBusy}
             accept=".json,application/json"
             className="hidden"
             onChange={(e) => {

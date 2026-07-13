@@ -7,25 +7,34 @@ interface Props {
   date: string
   entry?: WorkEntry
   isRestDay: boolean
+  externalBusy?: boolean
   onClose: () => void
   onSave: (e: WorkEntry) => Promise<void>
   onDelete: () => Promise<void>
 }
 
-export default function EntryModal({ date, entry, isRestDay, onClose, onSave, onDelete }: Props) {
+export default function EntryModal({
+  date,
+  entry,
+  isRestDay,
+  externalBusy = false,
+  onClose,
+  onSave,
+  onDelete,
+}: Props) {
   const [i, setI] = useState(entry?.in ?? '')
   const [o, setO] = useState(entry?.out ?? '')
   const [counts, setCounts] = useState<boolean>(entry?.counts ?? !isRestDay)
-  const [busy, setBusy] = useState(false)
+  const [busyAction, setBusyAction] = useState<'save' | 'delete' | null>(null)
   const [actionError, setActionError] = useState('')
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose()
+      if (e.key === 'Escape' && busyAction === null && !externalBusy) onClose()
     }
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
-  }, [busy, onClose])
+  }, [busyAction, externalBusy, onClose])
 
   const net = calcNet(i, o)
   const bothFilled = !!(i && o)
@@ -40,33 +49,33 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
   const ot = net != null ? net - DAILY_TARGET : 0
   const displayNet = isRestDay ? floorTo30Min(net!) : net!
 
-  const runAction = async (action: () => Promise<void>) => {
-    setBusy(true)
+  const runAction = async (kind: 'save' | 'delete', action: () => Promise<void>) => {
+    setBusyAction(kind)
     setActionError('')
     try {
       await action()
     } catch (error) {
       setActionError(error instanceof Error ? error.message : String(error))
     } finally {
-      setBusy(false)
+      setBusyAction(null)
     }
   }
 
   const handleSave = () => {
-    if (!valid || busy) return
-    void runAction(() => onSave({ in: i, out: o, counts }))
+    if (!valid || busyAction !== null || externalBusy) return
+    void runAction('save', () => onSave({ in: i, out: o, counts }))
   }
 
   const handleDelete = () => {
-    if (busy) return
-    void runAction(onDelete)
+    if (busyAction !== null || externalBusy) return
+    void runAction('delete', onDelete)
   }
 
   return (
     <div
       className="fixed inset-0 bg-ink/30 flex items-center justify-center z-20 px-4"
       onClick={() => {
-        if (!busy) onClose()
+        if (busyAction === null && !externalBusy) onClose()
       }}
     >
       <div
@@ -144,10 +153,10 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
           {entry ? (
             <button
               onClick={handleDelete}
-              disabled={busy}
+              disabled={busyAction !== null || externalBusy}
               className="text-[13px] uppercase tracking-[0.16em] font-mono text-plum hover:underline"
             >
-              删除
+              {busyAction === 'delete' ? '删除中…' : '删除'}
             </button>
           ) : (
             <span />
@@ -155,17 +164,17 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
           <div className="flex gap-2 ml-auto">
             <button
               onClick={onClose}
-              disabled={busy}
+              disabled={busyAction !== null || externalBusy}
               className="px-5 py-2.5 text-[13px] text-ink-soft hover:text-ink font-mono uppercase tracking-[0.14em] transition-colors"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              disabled={!valid || busy}
+              disabled={!valid || busyAction !== null || externalBusy}
               className="px-6 py-2.5 bg-ink text-paper text-[13px] font-mono uppercase tracking-[0.14em] rounded-sm disabled:opacity-30 hover:bg-ink-soft transition-colors"
             >
-              {busy ? '保存中…' : '保存'}
+              {busyAction === 'save' ? '保存中…' : '保存'}
             </button>
           </div>
         </div>
