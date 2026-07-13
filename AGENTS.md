@@ -30,10 +30,20 @@
 
 ## 跑
 
-- `npm --prefix frontend run dev` — 前端开发（`localhost:5173`）
+以下命令的当前目录都是**仓库根目录**：
 
-从仓库根目录运行完整应用：
+- `npm --prefix frontend run dev` — 前端开发（`localhost:5173`）
+- `poetry -C backend run pytest -v` — 后端测试
+
+运行完整应用：
 
 1. `npm --prefix frontend run build` — 执行 `tsc --noEmit && vite build`，生成 `frontend/dist/index.html`
 2. `poetry -C backend run uvicorn backend.main:app --host 127.0.0.1 --port 8000`
 3. 浏览器打开 `http://127.0.0.1:8000`
+
+如果当前目录已经是 `backend/`：
+
+- `npm --prefix ../frontend run dev` — 前端开发
+- `npm --prefix ../frontend run build` — 前端 type-check + 构建
+- `poetry run uvicorn backend.main:app --reload` — 后端开发服务（默认 `127.0.0.1:8000`）
+- `poetry run pytest -v` — 后端测试
