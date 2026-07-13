@@ -1,6 +1,6 @@
 # 工时统计 · Workhours
 
-一个个人工作小时统计工具，单页面 Web 应用。数据存本地浏览器（`localStorage`），无需后端，产物为单个 HTML 文件（`frontend/dist/index.html` ≈ 590 KB），双击即可打开。
+一个仅供本机单用户使用的工时统计应用。React 前端由 FastAPI 提供，工时记录、主题和节假日缓存统一保存在 SQLite 数据库 `backend/data/workhours.db`。使用时启动本地服务并访问 `http://127.0.0.1:8000`，不要双击构建产物。
 
 ## 技术栈
 
@@ -8,7 +8,9 @@
 - **Tailwind CSS v4**（`@tailwindcss/vite` 插件）
 - **Recharts**（走势图）
 - **vite-plugin-singlefile**（单文件产物）
-- **holiday-cn**（法定节假日数据，jsDelivr / raw.githubusercontent CDN 拉取，含调休）
+- **FastAPI** + Python 内置 **sqlite3**（本地 API 与持久化）
+- **Poetry**（项目内 Python 虚拟环境）
+- **holiday-cn**（后端从 jsDelivr / GitHub Raw 获取并缓存，含调休）
 
 ## 功能
 
@@ -21,8 +23,8 @@
 - **漏打卡提醒**（`App`）：当月已过去的 workday 中未打卡的日期，ochre 提示条。
 - **时长统一格式** `X小时Y分钟`（分钟为 0 省略，hours 0 时只留"X分钟"）。
 - **状态色**：盈余 navy / 缺口 plum / 加班 ochre / 周末 plum / 调休 navy / 无效 muted。
-- **主题切换**（`Header` 右上「冷色 / 青绿」）：默认冷调，可切到「淡雅青绿」配色（背景 celadon 绿、计入/盈余 `#2D6B5F`、缺口/休息 淡珊瑚 `#B36B5E`、加班 金棕 `#B0893D`、正文 `SF Pro Display` + 中文 `PingFang SC`）。选择持久化 `localStorage['workhours_theme_v1']`。实现：`data-theme` 属性 + CSS 变量覆盖，**业务组件零改动**。
-- **手动导出 / 导入**（`Header` 右上）：导出 = 下载 `workhours-YYYY-MM-DD-HH-mm-ss.json`；导入 = 选 JSON 覆盖当前 entries（有数据时先 `confirm`）。浏览器**不能**静默写到指定目录——把 Chrome 下载位置改到项目下 `backend/data/` 文件夹可以"默认落盘"。详见 `doc/backend/业务规则/数据存储与备份.md`。
+- **主题切换**（`Header` 右上「冷色 / 青绿」）：主题由后端 API 持久化到 SQLite；前端仍通过 `data-theme` 与 CSS 变量切换，业务组件不需要感知配色实现。
+- **完整备份导出 / 导入**（`Header` 右上）：导出 version 2 JSON，包含 entries、主题与节假日缓存；导入同时兼容只迁移 entries 的旧版 version 1 JSON。
 
 ## 业务算法
 
@@ -66,12 +68,11 @@ frontend/
 │   ├── lib/
 │   │   ├── types.ts         # WorkEntry / HolidayMap / DayInfo
 │   │   ├── workHours.ts     # calcNet / fmtDuration / floorTo30Min / isEntryCounted
-│   │   ├── holidays.ts      # fetchHolidays / dayInfo / workingDaysInMonth
-│   │   ├── storage.ts       # localStorage 读写
+│   │   ├── holidays.ts      # dayInfo / workingDaysInMonth
+│   │   ├── api.ts           # FastAPI 请求与备份上传/下载
 │   │   ├── useCountUp.ts    # 数字补间 hook
 │   │   ├── useMonthStats.ts # 当月统计共享 hook（Dashboard / 推荐卡复用）
-│   │   ├── useTheme.ts      # 主题切换 hook（data-theme + localStorage 持久化）
-│   │   └── backup.ts        # 导出 / 导入 JSON 工具（buildExport / parseImport / downloadExport）
+│   │   └── useTheme.ts      # 将后端主题应用到 data-theme
 │   └── components/
 │       ├── Header.tsx       # 顶部 wordmark + 月份导航
 │       ├── Dashboard.tsx    # 推荐卡 + 4 张统计卡
@@ -82,21 +83,35 @@ frontend/
 ├── index.html
 └── package.json
 backend/
-└── data/                    # 现有 JSON 备份；后端代码尚未创建
+├── backend/                 # FastAPI、API、services、repositories、SQLite 初始化
+├── tests/                   # pytest 测试
+├── data/                    # workhours.db 与手动下载的 JSON 备份
+├── pyproject.toml
+└── poetry.lock
 doc/
 ├── frontend/                # 前端业务规则、项目日志和踩坑记录
 └── backend/                 # 后端存储规则、设计规格、实施计划、项目日志和踩坑记录
 ```
 
-## 跑
+## 安装、构建与运行
+
+首次使用，在仓库根目录安装前后端依赖：
 
 ```bash
+poetry -C backend install
 npm --prefix frontend install
-npm --prefix frontend run dev      # 开发：localhost:5173，热更新
-npm --prefix frontend run build    # 产物：frontend/dist/index.html（双击即开）
 ```
 
-`build` 脚本是 `tsc --noEmit && vite build`：tsc 先做类型检查，vite 再 bundle。改源码如果 import 漏了或类型错了，**build 阶段就报错**，不会溜到浏览器运行时。
+构建并启动：
+
+```bash
+npm --prefix frontend run build
+poetry -C backend run uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+然后打开 `http://127.0.0.1:8000`。`build` 脚本会先执行 `tsc --noEmit`，再由 Vite 生成 `frontend/dist/index.html`；FastAPI 从固定的仓库路径提供该文件。如果页面返回 `503`，先重新执行构建命令。
+
+开发前端时可另开终端执行 `npm --prefix frontend run dev`，Vite 地址为 `http://localhost:5173`。后端安装、启动和测试一律通过 Poetry；本项目**禁止使用全局 `pip install`**。
 
 ## 关键 prop / state 命名对照
 
@@ -129,13 +144,10 @@ npm --prefix frontend run build    # 产物：frontend/dist/index.html（双击�
 
 ## 数据
 
-- 打卡：`localStorage` key `workhours_v1`
-  - 每条 entry 形如 `{ in: "08:00", out: "18:00", counts?: boolean }`
-- 节假日缓存：`holidaycn_v1_<year>`
-- 主题：`workhours_theme_v1`（`'cool'` | `'teal'`）
+- SQLite 文件：`backend/data/workhours.db`。
+- 打卡、主题和节假日缓存都通过 `/api/*` 读写；浏览器 `localStorage` 不是正式数据源，后端不可用时也不会回退到浏览器存储。
+- 顶栏 `导出` 下载 version 2 文件 `workhours-YYYY-MM-DD-HH-mm-ss.json`，可完整恢复 entries、主题和节假日缓存。
+- 顶栏 `导入` 支持 version 2 完整恢复；旧版 version 1 仅替换 entries，不修改当前主题和节假日缓存。
+- 网页不能静默指定下载目录；若希望手动备份默认落到 `backend/data/`，需在浏览器设置中修改下载位置。
 
-**数据存浏览器、不在文件夹里**——`frontend/dist/index.html` 双击打开时，localStorage 按 `file://` 路径 + 浏览器 profile 锁。**挪文件夹、换浏览器、清除浏览数据都会丢**。所以加了手动备份：
-
-- 顶栏 `导出` → 下载 `workhours-YYYY-MM-DD-HH-mm-ss.json`（建议存到项目下 `backend/data/` 文件夹）
-- 顶栏 `导入` → 选 JSON 覆盖当前 entries（有数据先 `confirm`）
-- 浏览器**不能**让网页静默写到指定目录——想把"默认到 backend/data/"，在 Chrome 设置 → 下载 → 位置改到 `backend/data/` 文件夹（一次性）。详见 `doc/backend/业务规则/数据存储与备份.md`。
+详细的 API、事务和备份规则见 `doc/backend/业务规则/数据存储与备份.md`。

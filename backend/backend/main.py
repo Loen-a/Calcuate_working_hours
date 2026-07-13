@@ -4,19 +4,23 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from backend.api import backup, entries, health, holidays, preferences
 from backend.db import DEFAULT_DB_PATH, initialize_database
 
 logger = logging.getLogger(__name__)
 
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = BACKEND_ROOT.parent
+DEFAULT_FRONTEND_DIR = REPOSITORY_ROOT / "frontend" / "dist"
+
 
 def create_app(
     db_path: Path = DEFAULT_DB_PATH,
-    frontend_dir: Path | None = None,
+    frontend_dir: Path | None = DEFAULT_FRONTEND_DIR,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -40,6 +44,27 @@ def create_app(
     app.include_router(preferences.router, prefix="/api")
     app.include_router(holidays.router, prefix="/api")
     app.include_router(backup.router, prefix="/api")
+
+    @app.get("/", include_in_schema=False)
+    def frontend_index() -> FileResponse:
+        if app.state.frontend_dir is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "frontend build not found; "
+                    "run npm --prefix frontend run build"
+                ),
+            )
+        index_path = Path(app.state.frontend_dir) / "index.html"
+        if not index_path.is_file():
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "frontend build not found; "
+                    "run npm --prefix frontend run build"
+                ),
+            )
+        return FileResponse(index_path)
 
     @app.exception_handler(sqlite3.Error)
     async def sqlite_error_handler(
