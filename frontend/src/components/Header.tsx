@@ -1,19 +1,32 @@
 import { useRef } from 'react'
-import { useTheme } from '../lib/useTheme'
+import type { Theme } from '../lib/types'
 
 interface Props {
   y: number
   m: number
+  theme: Theme
+  themeBusy: boolean
   onPrev: () => void
   onNext: () => void
   onToday: () => void
+  onThemeToggle: () => void
   onExport: () => void
   onImport: (file: File) => void
 }
 
-export default function Header({ y, m, onPrev, onNext, onToday, onExport, onImport }: Props) {
+export default function Header({
+  y,
+  m,
+  theme,
+  themeBusy,
+  onPrev,
+  onNext,
+  onToday,
+  onThemeToggle,
+  onExport,
+  onImport,
+}: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [theme, toggleTheme] = useTheme()
   return (
     <header className="border-b border-rule">
       <div className="max-w-5xl mx-auto px-8 py-6 flex items-center justify-between">
@@ -59,7 +72,8 @@ export default function Header({ y, m, onPrev, onNext, onToday, onExport, onImpo
             导入
           </button>
           <button
-            onClick={toggleTheme}
+            onClick={onThemeToggle}
+            disabled={themeBusy}
             className="px-4 py-2.5 text-[13px] uppercase tracking-[0.14em] text-ink-soft hover:text-ink font-mono border border-rule rounded-full hover:border-ink-soft transition-colors"
             title="切换主题（青绿 / 冷色）"
           >

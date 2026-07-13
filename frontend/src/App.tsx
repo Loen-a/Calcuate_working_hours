@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Entries, HolidayMap } from './lib/types'
-import { loadEntries, saveEntries } from './lib/storage'
-import { fetchHolidays, dayInfo } from './lib/holidays'
+import type { Entries, HolidayMap, HolidaySource, Theme, WorkEntry } from './lib/types'
+import { dayInfo } from './lib/holidays'
 import { calcNet, fmtDate } from './lib/workHours'
-import { downloadExport, parseImport } from './lib/backup'
+import {
+  deleteEntry,
+  downloadBackup,
+  getEntries,
+  getHolidays,
+  getPreferences,
+  importBackup,
+  putEntry,
+  putPreferences,
+} from './lib/api'
+import { useAppliedTheme } from './lib/useTheme'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import TrendChart from './components/TrendChart'
@@ -14,15 +23,50 @@ export default function App() {
   const now = new Date()
   const [viewY, setViewY] = useState(now.getFullYear())
   const [viewM, setViewM] = useState(now.getMonth() + 1)
-  const [entries, setEntries] = useState<Entries>(() => loadEntries())
+  const [entries, setEntries] = useState<Entries>({})
   const [hMap, setHMap] = useState<HolidayMap | undefined>(undefined)
+  const [holidaySource, setHolidaySource] = useState<HolidaySource | null>(null)
+  const [theme, setTheme] = useState<Theme | null>(null)
+  const [themeBusy, setThemeBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [modalDate, setModalDate] = useState<string | null>(null)
+
+  useAppliedTheme(theme)
 
   useEffect(() => {
     let alive = true
-    fetchHolidays(viewY).then((map) => {
-      if (alive) setHMap(map)
-    })
+    Promise.all([getEntries(), getPreferences()])
+      .then(([loadedEntries, preferences]) => {
+        if (!alive) return
+        setEntries(loadedEntries)
+        setTheme(preferences.theme)
+        setLoading(false)
+      })
+      .catch((error) => {
+        if (!alive) return
+        setLoadError(error instanceof Error ? error.message : String(error))
+        setLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    setHMap(undefined)
+    setHolidaySource(null)
+    getHolidays(viewY)
+      .then((result) => {
+        if (!alive) return
+        setHMap(result.holidays)
+        setHolidaySource(result.source)
+      })
+      .catch((error) => {
+        if (!alive) return
+        setLoadError(error instanceof Error ? error.message : String(error))
+      })
     return () => {
       alive = false
     }
@@ -57,44 +101,65 @@ export default function App() {
     setModalDate(date)
   }
 
-  const upsert = (date: string, e: { in: string; out: string } | null) => {
-    setEntries((prev) => {
-      const next = { ...prev }
-      if (e && e.in && e.out) next[date] = e
-      else delete next[date]
-      saveEntries(next)
-      return next
-    })
-  }
-
-  // 导出：触发浏览器下载（保存位置由浏览器/用户在 Save As 里决定）
-  const handleExport = () => {
-    downloadExport()
-  }
-
-  // 导入：覆盖当前所有 entries（如果已有数据先 confirm 一下）
-  const handleImport = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const imported = parseImport(String(reader.result))
-        const count = Object.keys(entries).length
-        if (count > 0 && !window.confirm(`导入会覆盖当前 ${count} 条打卡记录，确定？`)) return
-        setEntries(imported)
-        saveEntries(imported)
-        window.alert(`导入成功，共 ${Object.keys(imported).length} 条记录`)
-      } catch (e) {
-        window.alert('导入失败：' + (e instanceof Error ? e.message : String(e)))
-      }
+  const upsert = async (date: string, entry: WorkEntry | null) => {
+    if (entry) {
+      const saved = await putEntry(date, entry)
+      setEntries((prev) => ({ ...prev, [date]: saved }))
+    } else {
+      await deleteEntry(date)
+      setEntries((prev) => {
+        const next = { ...prev }
+        delete next[date]
+        return next
+      })
     }
-    reader.readAsText(file)
   }
 
-  const note = !hMap
-    ? '数据存于本地浏览器'
-    : Object.keys(hMap).length > 0
-      ? '节假日数据: holiday-cn · 数据存于本地浏览器'
-      : `${viewY} 年节假日数据未获取到，已按周末推断 · 数据存于本地浏览器`
+  const handleThemeToggle = async () => {
+    if (themeBusy) return
+    const nextTheme: Theme = theme === 'cool' ? 'teal' : 'cool'
+    setThemeBusy(true)
+    try {
+      const saved = await putPreferences(nextTheme)
+      setTheme(saved.theme)
+    } catch (error) {
+      window.alert('主题保存失败：' + (error instanceof Error ? error.message : String(error)))
+    } finally {
+      setThemeBusy(false)
+    }
+  }
+
+  const handleExport = () => downloadBackup()
+
+  const handleImport = async (file: File) => {
+    if (
+      Object.keys(entries).length > 0 &&
+      !window.confirm('导入会覆盖数据库中的现有数据，确定？')
+    ) return
+    try {
+      const summary = await importBackup(file)
+      const [loadedEntries, preferences, holidays] = await Promise.all([
+        getEntries(),
+        getPreferences(),
+        getHolidays(viewY),
+      ])
+      setEntries(loadedEntries)
+      setTheme(preferences.theme)
+      setHMap(holidays.holidays)
+      setHolidaySource(holidays.source)
+      window.alert('导入成功，共 ' + summary.entries + ' 条记录')
+    } catch (error) {
+      window.alert('导入失败：' + (error instanceof Error ? error.message : String(error)))
+    }
+  }
+
+  const note = holidaySource === null
+    ? '正在加载节假日数据 · 数据存于本地数据库'
+    : holidaySource === 'fallback'
+      ? `${viewY} 年节假日数据未获取到，已按周末推断 · 数据存于本地数据库`
+      : holidaySource === 'cache'
+        ? '节假日数据: holiday-cn（本地缓存） · 数据存于本地数据库'
+        : '节假日数据: holiday-cn · 数据存于本地数据库'
 
   // 提醒：当月、已过去的（不含今天）工作日里没打卡的日期
   const missedPast: string[] = useMemo(() => {
@@ -111,14 +176,28 @@ export default function App() {
     return list
   }, [viewY, viewM, hMap, entries])
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen grid place-items-center text-plum">
+        无法连接本地数据库：{loadError}
+      </div>
+    )
+  }
+  if (loading || theme === null) {
+    return <div className="min-h-screen grid place-items-center">正在连接本地数据库…</div>
+  }
+
   return (
     <div className="min-h-screen">
       <Header
         y={viewY}
         m={viewM}
+        theme={theme}
+        themeBusy={themeBusy}
         onPrev={() => navMonth(-1)}
         onNext={() => navMonth(1)}
         onToday={goToday}
+        onThemeToggle={handleThemeToggle}
         onExport={handleExport}
         onImport={handleImport}
       />
@@ -151,12 +230,12 @@ export default function App() {
           entry={entries[modalDate]}
           isRestDay={!!hMap && dayInfo(viewY, viewM, parseInt(modalDate.split('-')[2], 10), hMap).type === 'rest'}
           onClose={() => setModalDate(null)}
-          onSave={(e) => {
-            upsert(modalDate, e)
+          onSave={async (e) => {
+            await upsert(modalDate, e)
             setModalDate(null)
           }}
-          onDelete={() => {
-            upsert(modalDate, null)
+          onDelete={async () => {
+            await upsert(modalDate, null)
             setModalDate(null)
           }}
         />

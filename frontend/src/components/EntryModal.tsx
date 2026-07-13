@@ -8,22 +8,24 @@ interface Props {
   entry?: WorkEntry
   isRestDay: boolean
   onClose: () => void
-  onSave: (e: WorkEntry) => void
-  onDelete: () => void
+  onSave: (e: WorkEntry) => Promise<void>
+  onDelete: () => Promise<void>
 }
 
 export default function EntryModal({ date, entry, isRestDay, onClose, onSave, onDelete }: Props) {
   const [i, setI] = useState(entry?.in ?? '')
   const [o, setO] = useState(entry?.out ?? '')
   const [counts, setCounts] = useState<boolean>(entry?.counts ?? !isRestDay)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !busy) onClose()
     }
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
-  }, [onClose])
+  }, [busy, onClose])
 
   const net = calcNet(i, o)
   const bothFilled = !!(i && o)
@@ -38,15 +40,34 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
   const ot = net != null ? net - DAILY_TARGET : 0
   const displayNet = isRestDay ? floorTo30Min(net!) : net!
 
+  const runAction = async (action: () => Promise<void>) => {
+    setBusy(true)
+    setActionError('')
+    try {
+      await action()
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handleSave = () => {
-    if (!valid) return
-    onSave({ in: i, out: o, counts })
+    if (!valid || busy) return
+    void runAction(() => onSave({ in: i, out: o, counts }))
+  }
+
+  const handleDelete = () => {
+    if (busy) return
+    void runAction(onDelete)
   }
 
   return (
     <div
       className="fixed inset-0 bg-ink/30 flex items-center justify-center z-20 px-4"
-      onClick={onClose}
+      onClick={() => {
+        if (!busy) onClose()
+      }}
     >
       <div
         className="bg-paper border border-rule rounded-sm p-8 w-[380px] shadow-sm"
@@ -100,7 +121,9 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
           </div>
         )}
 
-        {err && <div className="text-plum text-[13px] mt-3 font-mono">{err}</div>}
+        {(err || actionError) && (
+          <div className="text-plum text-[13px] mt-3 font-mono">{err || actionError}</div>
+        )}
 
         <div className="mt-6 pt-5 border-t border-rule min-h-[56px]">
           {net != null ? (
@@ -120,7 +143,8 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
         <div className="flex justify-between items-center mt-7 gap-2">
           {entry ? (
             <button
-              onClick={onDelete}
+              onClick={handleDelete}
+              disabled={busy}
               className="text-[13px] uppercase tracking-[0.16em] font-mono text-plum hover:underline"
             >
               删除
@@ -131,16 +155,17 @@ export default function EntryModal({ date, entry, isRestDay, onClose, onSave, on
           <div className="flex gap-2 ml-auto">
             <button
               onClick={onClose}
+              disabled={busy}
               className="px-5 py-2.5 text-[13px] text-ink-soft hover:text-ink font-mono uppercase tracking-[0.14em] transition-colors"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              disabled={!valid}
+              disabled={!valid || busy}
               className="px-6 py-2.5 bg-ink text-paper text-[13px] font-mono uppercase tracking-[0.14em] rounded-sm disabled:opacity-30 hover:bg-ink-soft transition-colors"
             >
-              保存
+              {busy ? '保存中…' : '保存'}
             </button>
           </div>
         </div>
