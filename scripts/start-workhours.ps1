@@ -41,6 +41,12 @@ function Get-RequiredCommandPath {
 
     $command = Get-Command $Name -ErrorAction SilentlyContinue
     if (-not $command) {
+        if ($Name -eq 'poetry') {
+            throw "Required command 'poetry' was not found. Install Poetry and add it to PATH."
+        }
+        if ($Name -eq 'npm') {
+            throw "Required command 'npm' was not found. Install Node.js (including npm) and add it to PATH."
+        }
         throw "Required command '$Name' was not found in PATH."
     }
     return $command.Source
@@ -73,6 +79,62 @@ function Test-WorkhoursTcpPort {
     } finally {
         $client.Dispose()
     }
+}
+
+function Test-WorkhoursProcessInTree {
+    param(
+        [Parameter(Mandatory)][int]$ProcessId,
+        [Parameter(Mandatory)][int]$RootProcessId
+    )
+
+    $currentId = $ProcessId
+    $visited = @{}
+    while ($currentId -gt 0 -and -not $visited.ContainsKey($currentId)) {
+        if ($currentId -eq $RootProcessId) { return $true }
+        $visited[$currentId] = $true
+        $processInfo = Get-CimInstance `
+            -ClassName Win32_Process `
+            -Filter ("ProcessId = {0}" -f $currentId) `
+            -ErrorAction SilentlyContinue
+        if (-not $processInfo) { return $false }
+        $currentId = [int]$processInfo.ParentProcessId
+    }
+    return $false
+}
+
+function Assert-WorkhoursListenerOwnership {
+    param(
+        [Parameter(Mandatory)][int]$Port,
+        [Parameter(Mandatory)][System.Diagnostics.Process]$RootProcess
+    )
+
+    $RootProcess.Refresh()
+    if ($RootProcess.HasExited) {
+        throw "Recorded service process PID $($RootProcess.Id) has exited."
+    }
+
+    $listenerProcessIds = @(
+        Get-NetTCPConnection `
+            -LocalAddress '127.0.0.1' `
+            -LocalPort $Port `
+            -State Listen `
+            -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty OwningProcess -Unique
+    )
+    foreach ($listenerProcessId in $listenerProcessIds) {
+        if (Test-WorkhoursProcessInTree `
+            -ProcessId ([int]$listenerProcessId) `
+            -RootProcessId $RootProcess.Id) {
+            return
+        }
+    }
+
+    $owners = if ($listenerProcessIds.Count -gt 0) {
+        $listenerProcessIds -join ', '
+    } else {
+        'none'
+    }
+    throw "Port $Port listener PID(s) $owners are not owned by recorded service PID $($RootProcess.Id)."
 }
 
 function Wait-WorkhoursHealth {
@@ -144,6 +206,33 @@ function Remove-WorkhoursTemporaryProfile {
     }
 }
 
+function Invoke-WorkhoursCleanup {
+    param(
+        [System.Diagnostics.Process]$ServerProcess,
+        [string]$ProfilePath
+    )
+
+    $cleanupErrors = @()
+    try {
+        Stop-WorkhoursProcessTree -Process $ServerProcess
+    } catch {
+        $cleanupErrors += $_.Exception
+    }
+    try {
+        Remove-WorkhoursTemporaryProfile -ProfilePath $ProfilePath
+    } catch {
+        $cleanupErrors += $_.Exception
+    }
+
+    if ($cleanupErrors.Count -eq 1) {
+        throw $cleanupErrors[0]
+    }
+    if ($cleanupErrors.Count -gt 1) {
+        $messages = ($cleanupErrors | ForEach-Object { $_.Message }) -join '; '
+        throw "Multiple cleanup failures: $messages"
+    }
+}
+
 function Invoke-WorkhoursLauncher {
     $repoRoot = [System.IO.Path]::GetFullPath(
         (Join-Path $PSScriptRoot '..')
@@ -185,6 +274,9 @@ function Invoke-WorkhoursLauncher {
             -Stage 'Frontend build'
 
         Write-Host 'Starting Workhours...' -ForegroundColor Cyan
+        if (Test-WorkhoursTcpPort -Port 8000) {
+            throw 'Port 8000 became occupied before service startup. Stop its listener and try again.'
+        }
         $serverProcess = Start-Process `
             -FilePath $poetry `
             -ArgumentList @(
@@ -196,6 +288,13 @@ function Invoke-WorkhoursLauncher {
             -PassThru
 
         Wait-WorkhoursHealth -ServerProcess $serverProcess
+        $serverProcess.Refresh()
+        if ($serverProcess.HasExited) {
+            throw 'Recorded service process exited after the health check.'
+        }
+        Assert-WorkhoursListenerOwnership `
+            -Port 8000 `
+            -RootProcess $serverProcess
 
         $profileDir = Join-Path (
             [System.IO.Path]::GetTempPath()
@@ -218,8 +317,9 @@ function Invoke-WorkhoursLauncher {
         Wait-Process -Id $browserProcess.Id
         Write-Host 'Workhours window closed. Stopping service...' -ForegroundColor Cyan
     } finally {
-        Stop-WorkhoursProcessTree -Process $serverProcess
-        Remove-WorkhoursTemporaryProfile -ProfilePath $profileDir
+        Invoke-WorkhoursCleanup `
+            -ServerProcess $serverProcess `
+            -ProfilePath $profileDir
     }
 }
 

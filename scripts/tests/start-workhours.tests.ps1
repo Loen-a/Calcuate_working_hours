@@ -26,6 +26,8 @@ $profileDir = $null
 $missing = $null
 $fakeTaskkillDir = $null
 $cleanupProcess = $null
+$ownershipListener = $null
+$unrelatedProcess = $null
 $originalPath = $env:PATH
 
 try {
@@ -49,6 +51,35 @@ try {
     $listener.Stop()
     $listener = $null
     Assert-True (-not (Test-WorkhoursTcpPort -Port $port)) 'Released port stayed busy.'
+
+    $ownershipListener = [System.Net.Sockets.TcpListener]::new(
+        [System.Net.IPAddress]::Loopback,
+        0
+    )
+    $ownershipListener.Start()
+    $ownershipPort = ([System.Net.IPEndPoint]$ownershipListener.LocalEndpoint).Port
+    Assert-WorkhoursListenerOwnership `
+        -Port $ownershipPort `
+        -RootProcess ([System.Diagnostics.Process]::GetCurrentProcess())
+
+    $unrelatedProcess = Start-Process `
+        -FilePath 'powershell.exe' `
+        -ArgumentList @('-NoProfile', '-Command', 'Start-Sleep -Seconds 60') `
+        -PassThru
+    $ownershipError = $null
+    try {
+        Assert-WorkhoursListenerOwnership `
+            -Port $ownershipPort `
+            -RootProcess $unrelatedProcess
+    } catch {
+        $ownershipError = $_.Exception
+    }
+    Assert-True ([bool]$ownershipError) 'Unrelated listener was accepted as the recorded service.'
+    Assert-True (
+        $ownershipError.Message.Contains('not owned')
+    ) 'Unrelated listener error did not explain the ownership failure.'
+    $ownershipListener.Stop()
+    $ownershipListener = $null
 
     $profileDir = Join-Path (
         [System.IO.Path]::GetTempPath()
@@ -88,6 +119,53 @@ try {
     $cleanupProcess.Refresh()
     Assert-True (-not $cleanupProcess.HasExited) 'Failed taskkill unexpectedly stopped the process.'
 
+    $profileDir = Join-Path (
+        [System.IO.Path]::GetTempPath()
+    ) ("worktime-statistics-browser-test-{0}" -f [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $profileDir | Out-Null
+    Set-Content -LiteralPath (Join-Path $profileDir 'marker.txt') -Value 'test'
+    $combinedCleanupError = $null
+    try {
+        Invoke-WorkhoursCleanup `
+            -ServerProcess $cleanupProcess `
+            -ProfilePath $profileDir
+    } catch {
+        $combinedCleanupError = $_.Exception
+    }
+    Assert-True ([bool]$combinedCleanupError) 'Launcher cleanup did not propagate the process error.'
+    Assert-True (
+        $combinedCleanupError.Message.Contains("PID $($cleanupProcess.Id)")
+    ) 'Launcher cleanup error did not include the process ID.'
+    Assert-True (
+        -not (Test-Path -LiteralPath $profileDir)
+    ) 'Temporary profile was not removed after process cleanup failed.'
+    $profileDir = $null
+
+    function Get-Command {
+        param([string]$Name, $ErrorAction)
+        return $null
+    }
+    try {
+        $poetryError = $null
+        try { Get-RequiredCommandPath -Name 'poetry' } catch { $poetryError = $_.Exception }
+        Assert-True ([bool]$poetryError) 'Missing Poetry did not raise an error.'
+        Assert-True (
+            $poetryError.Message.Contains('Install Poetry') -and
+            $poetryError.Message.Contains('PATH')
+        ) 'Missing Poetry guidance did not mention installation and PATH.'
+
+        $npmError = $null
+        try { Get-RequiredCommandPath -Name 'npm' } catch { $npmError = $_.Exception }
+        Assert-True ([bool]$npmError) 'Missing npm did not raise an error.'
+        Assert-True (
+            $npmError.Message.Contains('Install Node.js') -and
+            $npmError.Message.Contains('npm') -and
+            $npmError.Message.Contains('PATH')
+        ) 'Missing npm guidance did not mention Node.js/npm installation and PATH.'
+    } finally {
+        Remove-Item -LiteralPath Function:\Get-Command
+    }
+
     $script:healthProbeCount = 0
     $script:healthSleepMilliseconds = 0
     function Invoke-RestMethod {
@@ -125,6 +203,11 @@ try {
         Stop-Process -Id $cleanupProcess.Id -Force -ErrorAction SilentlyContinue
         [void]$cleanupProcess.WaitForExit(5000)
     }
+    if ($unrelatedProcess -and -not $unrelatedProcess.HasExited) {
+        Stop-Process -Id $unrelatedProcess.Id -Force -ErrorAction SilentlyContinue
+        [void]$unrelatedProcess.WaitForExit(5000)
+    }
+    if ($ownershipListener) { $ownershipListener.Stop() }
     if ($fakeTaskkillDir -and (Test-Path -LiteralPath $fakeTaskkillDir)) {
         Remove-Item -LiteralPath $fakeTaskkillDir -Recurse -Force
     }
