@@ -92,8 +92,8 @@ function Wait-WorkhoursHealth {
                 -TimeoutSec 2
             if ($response.status -eq 'ok') { return }
         } catch {
-            Start-Sleep -Milliseconds 250
         }
+        Start-Sleep -Milliseconds 250
     }
     throw 'Timed out waiting for http://127.0.0.1:8000/api/health.'
 }
@@ -103,6 +103,11 @@ function Stop-WorkhoursProcessTree {
 
     if (-not $Process -or $Process.HasExited) { return }
     & taskkill.exe /PID $Process.Id /T /F | Out-Null
+    $taskkillExitCode = $LASTEXITCODE
+    $Process.Refresh()
+    if (-not $Process.HasExited) {
+        throw "Failed to stop process tree for PID $($Process.Id): taskkill.exe exit code $taskkillExitCode."
+    }
 }
 
 function Remove-WorkhoursTemporaryProfile {
