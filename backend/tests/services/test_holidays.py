@@ -158,3 +158,107 @@ async def test_empty_remote_results_are_not_cached(tmp_path: Path) -> None:
     assert result.source == "fallback"
     assert result.holidays == {}
     assert count == 0
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "invalid_date",
+    ["2026-x", "2026-01-01junk", "2026-02-30"],
+)
+async def test_invalid_remote_dates_try_both_sources_without_caching(
+    tmp_path: Path,
+    invalid_date: str,
+) -> None:
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+    calls = 0
+
+    def invalid(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200,
+            json={
+                "days": [
+                    {
+                        "name": "Bad",
+                        "date": invalid_date,
+                        "isOffDay": True,
+                    }
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(invalid)
+    ) as client:
+        result = await get_holidays(conn, 2026, client)
+    count = conn.execute(
+        "SELECT COUNT(*) FROM holiday_cache WHERE year = 2026"
+    ).fetchone()[0]
+    conn.close()
+
+    assert calls == 2
+    assert result.source == "fallback"
+    assert count == 0
+
+
+@pytest.mark.anyio
+async def test_duplicate_remote_date_falls_back_to_next_source(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+    calls = 0
+
+    def remote(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "days": [
+                        {
+                            "name": "First",
+                            "date": "2026-01-01",
+                            "isOffDay": True,
+                        },
+                        {
+                            "name": "Duplicate",
+                            "date": "2026-01-01",
+                            "isOffDay": False,
+                        },
+                    ]
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "days": [
+                    {
+                        "name": "Fallback source",
+                        "date": "2026-01-02",
+                        "isOffDay": True,
+                    }
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(remote)
+    ) as client:
+        result = await get_holidays(conn, 2026, client)
+    cached = conn.execute(
+        "SELECT payload_json FROM holiday_cache WHERE year = 2026"
+    ).fetchone()
+    conn.close()
+
+    assert calls == 2
+    assert result.holidays == {
+        "01-02": {"name": "Fallback source", "isOffDay": True}
+    }
+    assert cached is not None
+    assert "Duplicate" not in cached["payload_json"]

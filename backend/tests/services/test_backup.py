@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+import backend.services.backup as backup_service
 from backend.db import connect, initialize_database
 from backend.repositories.entries import list_entries, upsert_entry
 from backend.repositories.holidays import list_holiday_cache, set_holiday_cache
@@ -331,4 +332,160 @@ def test_version_2_restores_non_empty_holiday_cache(tmp_path: Path) -> None:
     assert restored["entries"] == backup["entries"]
     assert restored["preferences"] == backup["preferences"]
     assert restored["holidayCache"] == backup["holidayCache"]
+    conn.close()
+
+
+@pytest.mark.parametrize(
+    "extra_location",
+    [
+        "v1 top level",
+        "v2 top level",
+        "entry",
+        "preferences",
+        "holiday year container",
+        "holiday item",
+    ],
+)
+def test_restore_rejects_unknown_fields_atomically(
+    tmp_path: Path,
+    extra_location: str,
+) -> None:
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+    with conn:
+        upsert_entry(conn, "2026-06-30", "08:00", "18:00", True)
+        set_theme(conn, "teal")
+        set_holiday_cache(
+            conn,
+            2026,
+            {"01-01": {"name": "Existing", "isOffDay": True}},
+            "2026-01-01T00:00:00Z",
+        )
+    before = (
+        list_entries(conn),
+        get_theme(conn),
+        list_holiday_cache(conn),
+    )
+    backup: dict[str, object] = {
+        "version": 2,
+        "exportedAt": "2026-07-12T00:00:00Z",
+        "entries": {
+            "2026-07-12": {"in": "08:10", "out": "18:40"}
+        },
+        "preferences": {"theme": "cool"},
+        "holidayCache": {
+            "2026": {
+                "holidays": {
+                    "01-02": {"name": "Imported", "isOffDay": False}
+                },
+                "fetchedAt": "2026-01-02T00:00:00Z",
+            }
+        },
+    }
+
+    if extra_location == "v1 top level":
+        backup = {
+            "version": 1,
+            "exportedAt": backup["exportedAt"],
+            "entries": backup["entries"],
+            "unexpected": True,
+        }
+    elif extra_location == "v2 top level":
+        backup["unexpected"] = True
+    elif extra_location == "entry":
+        backup["entries"]["2026-07-12"]["unexpected"] = True  # type: ignore[index]
+    elif extra_location == "preferences":
+        backup["preferences"]["unexpected"] = True  # type: ignore[index]
+    elif extra_location == "holiday year container":
+        backup["holidayCache"]["2026"]["unexpected"] = True  # type: ignore[index]
+    else:
+        backup["holidayCache"]["2026"]["holidays"]["01-02"][  # type: ignore[index]
+            "unexpected"
+        ] = True
+
+    with pytest.raises(ValueError):
+        restore_backup(conn, backup)
+
+    assert (
+        list_entries(conn),
+        get_theme(conn),
+        list_holiday_cache(conn),
+    ) == before
+    conn.close()
+
+
+def test_build_backup_reads_one_consistent_sqlite_snapshot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    reader = connect(db_path)
+    reader.execute("PRAGMA journal_mode = WAL")
+    with reader:
+        upsert_entry(reader, "2026-07-01", "08:00", "18:00", True)
+        set_theme(reader, "cool")
+        set_holiday_cache(
+            reader,
+            2026,
+            {"01-01": {"name": "Old", "isOffDay": True}},
+            "2026-01-01T00:00:00Z",
+        )
+    writer = connect(db_path)
+    real_list_entries = backup_service.list_entries
+
+    def read_entries_then_write(conn: sqlite3.Connection):
+        entries = real_list_entries(conn)
+        with writer:
+            upsert_entry(writer, "2026-07-02", "09:00", "19:00", False)
+            set_theme(writer, "teal")
+            set_holiday_cache(
+                writer,
+                2026,
+                {"01-02": {"name": "New", "isOffDay": False}},
+                "2026-01-02T00:00:00Z",
+            )
+        return entries
+
+    monkeypatch.setattr(
+        backup_service,
+        "list_entries",
+        read_entries_then_write,
+    )
+
+    backup = build_backup(reader)
+
+    assert backup["entries"] == {
+        "2026-07-01": {"in": "08:00", "out": "18:00", "counts": True}
+    }
+    assert backup["preferences"] == {"theme": "cool"}
+    assert backup["holidayCache"] == {
+        "2026": {
+            "holidays": {"01-01": {"name": "Old", "isOffDay": True}},
+            "fetchedAt": "2026-01-01T00:00:00Z",
+        }
+    }
+    assert get_theme(writer) == "teal"
+    writer.close()
+    reader.close()
+
+
+def test_build_backup_rolls_back_read_transaction_on_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+
+    def fail(_conn: sqlite3.Connection):
+        raise RuntimeError("simulated read failure")
+
+    monkeypatch.setattr(backup_service, "list_entries", fail)
+
+    with pytest.raises(RuntimeError, match="simulated read failure"):
+        build_backup(conn)
+
+    assert not conn.in_transaction
     conn.close()

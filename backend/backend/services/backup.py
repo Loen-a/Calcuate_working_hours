@@ -14,6 +14,16 @@ UTC_TIMESTAMP_PATTERN = re.compile(
 )
 
 
+def _reject_unknown_fields(
+    raw: dict[object, object],
+    allowed: set[str],
+    location: str,
+) -> None:
+    unknown = set(raw) - allowed
+    if unknown:
+        raise ValueError(f"{location} has unknown fields")
+
+
 def _validate_utc_timestamp(raw: object, field_name: str) -> str:
     if not isinstance(raw, str) or UTC_TIMESTAMP_PATTERN.fullmatch(raw) is None:
         raise ValueError(f"{field_name} must be a canonical UTC timestamp")
@@ -69,6 +79,11 @@ def _validate_holiday_cache(raw: object) -> dict[str, dict[str, Any]]:
             or not isinstance(value.get("fetchedAt"), str)
         ):
             raise ValueError("holidayCache entry has invalid fields")
+        _reject_unknown_fields(
+            value,
+            {"holidays", "fetchedAt"},
+            "holidayCache entry",
+        )
         fetched_at = _validate_utc_timestamp(
             value["fetchedAt"],
             "holiday fetchedAt",
@@ -77,6 +92,11 @@ def _validate_holiday_cache(raw: object) -> dict[str, dict[str, Any]]:
         for month_day, info in value["holidays"].items():
             if not isinstance(month_day, str) or not isinstance(info, dict):
                 raise ValueError("holiday entry has invalid fields")
+            _reject_unknown_fields(
+                info,
+                {"name", "isOffDay"},
+                "holiday entry",
+            )
             if re.fullmatch(r"[0-9]{2}-[0-9]{2}", month_day) is None:
                 raise ValueError("holiday date must use MM-DD")
             try:
@@ -105,13 +125,20 @@ def build_backup(conn: sqlite3.Connection) -> dict[str, object]:
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z")
     )
-    return {
-        "version": 2,
-        "exportedAt": exported_at,
-        "entries": list_entries(conn),
-        "preferences": {"theme": get_theme(conn)},
-        "holidayCache": list_holiday_cache(conn),
-    }
+    conn.execute("BEGIN")
+    try:
+        backup = {
+            "version": 2,
+            "exportedAt": exported_at,
+            "entries": list_entries(conn),
+            "preferences": {"theme": get_theme(conn)},
+            "holidayCache": list_holiday_cache(conn),
+        }
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return backup
 
 
 def restore_backup(
@@ -123,6 +150,10 @@ def restore_backup(
     version = raw.get("version")
     if type(version) is not int or version not in (1, 2):
         raise ValueError("unsupported backup version")
+    allowed_fields = {"version", "exportedAt", "entries"}
+    if version == 2:
+        allowed_fields.update({"preferences", "holidayCache"})
+    _reject_unknown_fields(raw, allowed_fields, "backup")
     _validate_utc_timestamp(raw.get("exportedAt"), "exportedAt")
 
     entries = _validate_entries(raw.get("entries"))

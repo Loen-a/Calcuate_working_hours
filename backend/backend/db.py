@@ -23,6 +23,32 @@ CREATE TABLE IF NOT EXISTS holiday_cache (
 );
 """
 
+EXPECTED_COLUMNS = {
+    "work_entries": (
+        ("work_date", "TEXT", 0, 1),
+        ("start_time", "TEXT", 1, 0),
+        ("end_time", "TEXT", 1, 0),
+        ("counts", "INTEGER", 0, 0),
+    ),
+    "preferences": (
+        ("id", "INTEGER", 0, 1),
+        ("theme", "TEXT", 1, 0),
+    ),
+    "holiday_cache": (
+        ("year", "INTEGER", 0, 1),
+        ("payload_json", "TEXT", 1, 0),
+        ("fetched_at", "TEXT", 1, 0),
+    ),
+}
+
+REQUIRED_CONSTRAINTS = {
+    "work_entries": ("check(countsin(0,1)orcountsisnull)",),
+    "preferences": (
+        "check(id=1)",
+        "check(themein('cool','teal'))",
+    ),
+}
+
 
 def connect(db_path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, timeout=5.0, check_same_thread=False)
@@ -30,6 +56,28 @@ def connect(db_path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA busy_timeout = 5000")
     return conn
+
+
+def _validate_schema(conn: sqlite3.Connection) -> None:
+    for table, expected in EXPECTED_COLUMNS.items():
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        actual = tuple(
+            (row["name"], row["type"].upper(), row["notnull"], row["pk"])
+            for row in rows
+        )
+        if actual != expected:
+            raise RuntimeError(f"{table} schema is incompatible")
+
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table,),
+        ).fetchone()
+        normalized_sql = "".join(str(row["sql"]).lower().split())
+        if any(
+            constraint not in normalized_sql
+            for constraint in REQUIRED_CONSTRAINTS.get(table, ())
+        ):
+            raise RuntimeError(f"{table} schema constraints are incompatible")
 
 
 def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
@@ -42,12 +90,13 @@ def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
                 f"database schema version {version} is newer than supported "
                 f"version {SCHEMA_VERSION}"
             )
+        conn.executescript(SCHEMA_SQL)
+        _validate_schema(conn)
+        conn.execute(
+            "INSERT OR IGNORE INTO preferences (id, theme) VALUES (1, 'cool')"
+        )
         if version == 0:
-            conn.executescript(SCHEMA_SQL)
-            conn.execute(
-                "INSERT OR IGNORE INTO preferences (id, theme) VALUES (1, 'cool')"
-            )
             conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-            conn.commit()
+        conn.commit()
     finally:
         conn.close()

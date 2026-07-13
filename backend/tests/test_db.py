@@ -3,6 +3,8 @@ from queue import Queue
 from pathlib import Path
 from threading import Event, Thread
 
+import pytest
+
 from backend.db import SCHEMA_VERSION, connect, initialize_database
 
 
@@ -72,3 +74,74 @@ def test_initialize_database_rejects_newer_schema(tmp_path: Path) -> None:
         assert "schema version 99" in str(exc)
     else:
         raise AssertionError("newer schema should be rejected")
+
+
+def test_initialize_database_repairs_version_1_missing_table(tmp_path: Path) -> None:
+    db_path = tmp_path / "workhours.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA user_version = 1")
+    conn.close()
+
+    initialize_database(db_path)
+
+    conn = connect(db_path)
+    try:
+        tables = {
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+    finally:
+        conn.close()
+
+    assert tables >= {"work_entries", "preferences", "holiday_cache"}
+
+
+def test_initialize_database_repairs_version_1_missing_preferences_row(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "workhours.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+    with conn:
+        conn.execute("DELETE FROM preferences")
+    conn.close()
+
+    initialize_database(db_path)
+
+    conn = connect(db_path)
+    try:
+        theme = conn.execute(
+            "SELECT theme FROM preferences WHERE id = 1"
+        ).fetchone()["theme"]
+    finally:
+        conn.close()
+
+    assert theme == "cool"
+
+
+def test_initialize_database_rejects_version_1_malformed_table(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "workhours.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute("CREATE TABLE work_entries (work_date TEXT PRIMARY KEY)")
+    conn.execute("PRAGMA user_version = 1")
+    conn.close()
+
+    with pytest.raises(RuntimeError, match="work_entries.*schema"):
+        initialize_database(db_path)
+
+
+def test_initialize_database_reports_malformed_preferences_schema(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "workhours.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute("CREATE TABLE preferences (id INTEGER PRIMARY KEY)")
+    conn.execute("PRAGMA user_version = 1")
+    conn.close()
+
+    with pytest.raises(RuntimeError, match="preferences.*schema"):
+        initialize_database(db_path)

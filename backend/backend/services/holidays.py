@@ -1,6 +1,6 @@
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Literal
 
 import httpx
@@ -33,12 +33,20 @@ def _normalize(year: int, raw: object) -> HolidayMap:
         is_off = item.get("isOffDay")
         if (
             not isinstance(date_value, str)
-            or not date_value.startswith(f"{year}-")
             or not isinstance(name, str)
             or not isinstance(is_off, bool)
         ):
             raise ValueError("holiday day has invalid fields")
-        result[date_value[5:]] = {"name": name, "isOffDay": is_off}
+        try:
+            parsed_date = date.fromisoformat(date_value)
+        except ValueError as exc:
+            raise ValueError("holiday day has invalid date") from exc
+        if parsed_date.isoformat() != date_value or parsed_date.year != year:
+            raise ValueError("holiday day has invalid date")
+        month_day = date_value[5:]
+        if month_day in result:
+            raise ValueError("holiday payload has duplicate date")
+        result[month_day] = {"name": name, "isOffDay": is_off}
     if not result:
         raise ValueError("holiday payload has no holiday days")
     return result
