@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api import entries, health, holidays, preferences
+from backend.api import backup, entries, health, holidays, preferences
 from backend.db import DEFAULT_DB_PATH, initialize_database
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,7 @@ def create_app(
     app.include_router(entries.router, prefix="/api")
     app.include_router(preferences.router, prefix="/api")
     app.include_router(holidays.router, prefix="/api")
+    app.include_router(backup.router, prefix="/api")
 
     @app.exception_handler(sqlite3.Error)
     async def sqlite_error_handler(
