@@ -41,6 +41,27 @@ try {
     $browser = Get-WorkhoursBrowserPath -Candidates @($missing, $tempFile.FullName)
     Assert-Equal $tempFile.FullName $browser 'Browser fallback order was not respected.'
 
+    $argumentProfile = Join-Path (
+        [System.IO.Path]::GetTempPath()
+    ) ("worktime-statistics-browser-args-{0}" -f [guid]::NewGuid().ToString('N'))
+    $browserArguments = Get-WorkhoursBrowserArguments -ProfilePath $argumentProfile
+    Assert-True ($browserArguments -contains '--new-window') 'Normal-window flag is missing.'
+    Assert-True (
+        $browserArguments -contains 'http://127.0.0.1:8000'
+    ) 'Workhours URL is missing from browser arguments.'
+    Assert-True (
+        $browserArguments -contains '--disable-extensions'
+    ) 'Disposable browser extensions are not disabled.'
+    Assert-True (
+        $browserArguments -contains '--disable-sync'
+    ) 'Disposable browser sync is not disabled.'
+    Assert-True (
+        -not @($browserArguments | Where-Object { $_ -like '--app=*' }).Count
+    ) 'Browser arguments still contain app mode.'
+    Assert-True (
+        @($browserArguments | Where-Object { $_ -like '--user-data-dir=*' }).Count -eq 1
+    ) 'Exactly one disposable profile argument is required.'
+
     $listener = [System.Net.Sockets.TcpListener]::new(
         [System.Net.IPAddress]::Loopback,
         0

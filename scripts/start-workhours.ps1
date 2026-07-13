@@ -36,6 +36,21 @@ function Get-WorkhoursBrowserPath {
     return $browser
 }
 
+function Get-WorkhoursBrowserArguments {
+    param([Parameter(Mandatory)][string]$ProfilePath)
+
+    return @(
+        '--new-window',
+        'http://127.0.0.1:8000',
+        "--user-data-dir=`"$ProfilePath`"",
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-mode',
+        '--disable-extensions',
+        '--disable-sync'
+    )
+}
+
 function Get-RequiredCommandPath {
     param([Parameter(Mandatory)][string]$Name)
 
@@ -301,13 +316,7 @@ function Invoke-WorkhoursLauncher {
         ) ("worktime-statistics-browser-{0}" -f [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path $profileDir | Out-Null
 
-        $browserArguments = @(
-            '--app=http://127.0.0.1:8000',
-            "--user-data-dir=`"$profileDir`"",
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-background-mode'
-        )
+        $browserArguments = Get-WorkhoursBrowserArguments -ProfilePath $profileDir
         $browserProcess = Start-Process `
             -FilePath $browser `
             -ArgumentList $browserArguments `
