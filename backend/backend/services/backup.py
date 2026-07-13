@@ -1,11 +1,29 @@
 import sqlite3
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timezone
 from typing import Any
 
 from backend.repositories.entries import list_entries, replace_entries
 from backend.repositories.holidays import list_holiday_cache, replace_holiday_cache
 from backend.repositories.preferences import get_theme, set_theme
 from backend.schemas import PreferencesPayload, WorkEntryPayload, validate_work_date
+
+UTC_TIMESTAMP_PATTERN = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+    r"[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z"
+)
+
+
+def _validate_utc_timestamp(raw: object, field_name: str) -> str:
+    if not isinstance(raw, str) or UTC_TIMESTAMP_PATTERN.fullmatch(raw) is None:
+        raise ValueError(f"{field_name} must be a canonical UTC timestamp")
+    try:
+        datetime.fromisoformat(raw[:-1] + "+00:00")
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name} must be a canonical UTC timestamp"
+        ) from exc
+    return raw
 
 
 def _validate_entries(raw: object) -> dict[str, dict[str, Any]]:
@@ -16,6 +34,13 @@ def _validate_entries(raw: object) -> dict[str, dict[str, Any]]:
         if not isinstance(work_date, str):
             raise ValueError("entry date must be a string")
         validate_work_date(work_date)
+        if (
+            isinstance(value, dict)
+            and "counts" in value
+            and value["counts"] is not None
+            and type(value["counts"]) is not bool
+        ):
+            raise ValueError("counts must be a boolean or null")
         payload = WorkEntryPayload.model_validate(value)
         validated[work_date] = payload.model_dump(
             by_alias=True,
@@ -31,33 +56,36 @@ def _validate_holiday_cache(raw: object) -> dict[str, dict[str, Any]]:
     for year, value in raw.items():
         if (
             not isinstance(year, str)
-            or not year.isdigit()
-            or not isinstance(value, dict)
+            or re.fullmatch(r"[0-9]{4}", year) is None
+            or int(year) < 2000
+            or int(year) > 2100
+        ):
+            raise ValueError(
+                "holiday cache year must be four digits in 2000..2100"
+            )
+        if (
+            not isinstance(value, dict)
             or not isinstance(value.get("holidays"), dict)
             or not isinstance(value.get("fetchedAt"), str)
         ):
             raise ValueError("holidayCache entry has invalid fields")
-        year_number = int(year)
-        if year_number < 2000 or year_number > 2100:
-            raise ValueError("holiday cache year must be 2000..2100")
-        fetched_at = value["fetchedAt"]
-        try:
-            datetime.fromisoformat(fetched_at.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise ValueError(
-                "holiday fetchedAt must be an ISO timestamp"
-            ) from exc
+        fetched_at = _validate_utc_timestamp(
+            value["fetchedAt"],
+            "holiday fetchedAt",
+        )
         holidays: dict[str, dict[str, str | bool]] = {}
         for month_day, info in value["holidays"].items():
             if not isinstance(month_day, str) or not isinstance(info, dict):
                 raise ValueError("holiday entry has invalid fields")
+            if re.fullmatch(r"[0-9]{2}-[0-9]{2}", month_day) is None:
+                raise ValueError("holiday date must use MM-DD")
             try:
-                datetime.strptime(f"{year}-{month_day}", "%Y-%m-%d")
+                date.fromisoformat(f"{year}-{month_day}")
             except ValueError as exc:
                 raise ValueError("holiday date must use MM-DD") from exc
             if (
                 not isinstance(info.get("name"), str)
-                or not isinstance(info.get("isOffDay"), bool)
+                or type(info.get("isOffDay")) is not bool
             ):
                 raise ValueError("holiday entry has invalid fields")
             holidays[month_day] = {
@@ -93,15 +121,9 @@ def restore_backup(
     if not isinstance(raw, dict):
         raise ValueError("backup must be an object")
     version = raw.get("version")
-    if version not in (1, 2):
+    if type(version) is not int or version not in (1, 2):
         raise ValueError("unsupported backup version")
-    exported_at = raw.get("exportedAt")
-    if not isinstance(exported_at, str):
-        raise ValueError("exportedAt must be an ISO timestamp")
-    try:
-        datetime.fromisoformat(exported_at.replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise ValueError("exportedAt must be an ISO timestamp") from exc
+    _validate_utc_timestamp(raw.get("exportedAt"), "exportedAt")
 
     entries = _validate_entries(raw.get("entries"))
     if version == 1:
