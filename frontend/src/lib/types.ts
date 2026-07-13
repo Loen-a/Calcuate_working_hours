@@ -5,6 +5,9 @@ export interface WorkEntry {
 }
 export type Entries = Record<string, WorkEntry> // "YYYY-MM-DD" -> entry
 
+export type Theme = 'cool' | 'teal'
+export type HolidaySource = 'cache' | 'remote' | 'fallback'
+
 export interface HolidayInfo {
   name: string
   isOffDay: boolean
