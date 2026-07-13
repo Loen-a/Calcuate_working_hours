@@ -30,5 +30,10 @@
 
 ## 跑
 
-- `npm --prefix frontend run dev` — 开发（`localhost:5173`）
-- `npm --prefix frontend run build` — `tsc --noEmit && vite build` → `frontend/dist/index.html`（单文件，双击即开）
+- `npm --prefix frontend run dev` — 前端开发（`localhost:5173`）
+
+从仓库根目录运行完整应用：
+
+1. `npm --prefix frontend run build` — 执行 `tsc --noEmit && vite build`，生成 `frontend/dist/index.html`
+2. `poetry -C backend run uvicorn backend.main:app --host 127.0.0.1 --port 8000`
+3. 浏览器打开 `http://127.0.0.1:8000`
