@@ -54,7 +54,7 @@ async def get_holidays(
         return HolidayResult(year, cached[0], "cache")
 
     owns_client = client is None
-    http_client = client or httpx.AsyncClient(timeout=5.0)
+    http_client = client or httpx.AsyncClient(timeout=5.0, trust_env=False)
     try:
         for template in UPSTREAM_URLS:
             try:

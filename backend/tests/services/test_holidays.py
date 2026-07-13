@@ -9,6 +9,52 @@ from backend.services.holidays import get_holidays
 
 
 @pytest.mark.anyio
+async def test_owned_client_disables_environment_proxy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "ALL_PROXY",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "all_proxy",
+        "http_proxy",
+        "https_proxy",
+    ):
+        monkeypatch.setenv(name, "socks5h://127.0.0.1:7897")
+
+    db_path = tmp_path / "test.db"
+    initialize_database(db_path)
+    conn = connect(db_path)
+    real_async_client = httpx.AsyncClient
+    constructor_kwargs: dict[str, object] = {}
+    owned_clients: list[httpx.AsyncClient] = []
+
+    def create_client(**kwargs: object) -> httpx.AsyncClient:
+        constructor_kwargs.update(kwargs)
+        owned_client = real_async_client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(503)
+            ),
+            timeout=kwargs["timeout"],
+            trust_env=False,
+        )
+        owned_clients.append(owned_client)
+        return owned_client
+
+    monkeypatch.setattr(
+        "backend.services.holidays.httpx.AsyncClient",
+        create_client,
+    )
+    result = await get_holidays(conn, 2026)
+    conn.close()
+
+    assert constructor_kwargs == {"timeout": 5.0, "trust_env": False}
+    assert owned_clients[0].is_closed
+    assert result.source == "fallback"
+
+
+@pytest.mark.anyio
 async def test_cache_hit_does_not_call_remote(tmp_path: Path) -> None:
     db_path = tmp_path / "test.db"
     initialize_database(db_path)
