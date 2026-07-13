@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import EntryModal from './EntryModal'
 
@@ -44,7 +44,10 @@ it('shows delete progress without relabeling the save button', async () => {
   expect(screen.getByRole('button', { name: '保存' })).toBeDisabled()
   expect(screen.queryByRole('button', { name: '保存中…' })).not.toBeInTheDocument()
 
-  deleting.resolve()
+  await act(async () => {
+    deleting.resolve()
+  })
+  expect(await screen.findByRole('button', { name: '删除' })).toBeEnabled()
 })
 
 function deferred<T>() {

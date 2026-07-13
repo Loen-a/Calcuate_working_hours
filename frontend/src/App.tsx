@@ -33,6 +33,7 @@ export default function App() {
   const [mutationKind, setMutationKind] = useState<'entry' | 'theme' | 'import' | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [recoveryError, setRecoveryError] = useState('')
   const [modalDate, setModalDate] = useState<string | null>(null)
 
   useAppliedTheme(theme)
@@ -173,24 +174,29 @@ export default function App() {
     try {
       const summary = await runMutation('import', async () => {
         const imported = await importBackup(file)
-        const reloadYear = viewYRef.current
-        const holidayGeneration = ++holidayRequestGeneration.current
-        const [loadedEntries, preferences, holidays] = await Promise.all([
-          getEntries(),
-          getPreferences(),
-          getHolidays(reloadYear),
-        ])
-        if (
-          holidayGeneration !== holidayRequestGeneration.current ||
-          viewYRef.current !== reloadYear
-        ) throw new Error('查看年份已变化，请重试')
-        setEntries(loadedEntries)
-        setTheme(preferences.theme)
-        setHMap(holidays.holidays)
-        setHolidaySource(holidays.source)
+        try {
+          const reloadYear = viewYRef.current
+          const holidayGeneration = ++holidayRequestGeneration.current
+          const [loadedEntries, preferences, holidays] = await Promise.all([
+            getEntries(),
+            getPreferences(),
+            getHolidays(reloadYear),
+          ])
+          if (
+            holidayGeneration !== holidayRequestGeneration.current ||
+            viewYRef.current !== reloadYear
+          ) throw new Error('查看年份已变化，无法提交重新读取的数据')
+          setEntries(loadedEntries)
+          setTheme(preferences.theme)
+          setHMap(holidays.holidays)
+          setHolidaySource(holidays.source)
+        } catch (error) {
+          setRecoveryError(error instanceof Error ? error.message : String(error))
+          return null
+        }
         return imported
       })
-      window.alert('导入成功，共 ' + summary.entries + ' 条记录')
+      if (summary !== null) window.alert('导入成功，共 ' + summary.entries + ' 条记录')
     } catch (error) {
       window.alert('导入失败：' + (error instanceof Error ? error.message : String(error)))
     }
@@ -219,6 +225,13 @@ export default function App() {
     return list
   }, [viewY, viewM, hMap, entries])
 
+  if (recoveryError) {
+    return (
+      <div className="min-h-screen grid place-items-center text-plum px-6 text-center">
+        导入已完成，但重新读取失败：{recoveryError}。请刷新页面或重新连接本地数据库。
+      </div>
+    )
+  }
   if (loadError) {
     return (
       <div className="min-h-screen grid place-items-center text-plum">

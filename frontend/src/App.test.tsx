@@ -134,3 +134,23 @@ it('does not start import while another persistent mutation is active', async ()
     savingTheme.resolve({ theme: 'cool' })
   })
 })
+
+it('blocks the app when upload succeeds but authoritative reload fails', async () => {
+  vi.mocked(api.getEntries)
+    .mockResolvedValueOnce({ '2026-07-01': { in: '08:00', out: '18:30' } })
+    .mockRejectedValueOnce(new Error('数据库连接已断开'))
+
+  const { container } = render(<App />)
+  await screen.findByText('Workhours')
+
+  fireEvent.change(container.querySelector<HTMLInputElement>('input[type="file"]')!, {
+    target: { files: [new File(['{}'], 'backup.json', { type: 'application/json' })] },
+  })
+
+  expect(
+    await screen.findByText(/导入已完成，但重新读取失败.*数据库连接已断开.*刷新.*重新连接/),
+  ).toBeInTheDocument()
+  expect(screen.queryByText('Workhours')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '导入' })).not.toBeInTheDocument()
+  expect(window.alert).not.toHaveBeenCalledWith(expect.stringContaining('导入失败'))
+})
