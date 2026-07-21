@@ -1,0 +1,415 @@
+- generic [active] [ref=f4e1]:
+  - banner [ref=f4e2]:
+    - generic [ref=f4e3]:
+      - heading "工作时长预测" [level=1] [ref=f4e4]
+      - paragraph [ref=f4e5]: 今天 2026-07-15 · 正在查看 2026-07-06 · 月平均 · 2 条启用规则
+    - button "上班" [ref=f4e7] [cursor=pointer]
+    - button "下班" [ref=f4e9] [cursor=pointer]
+  - main [ref=f4e10]:
+    - generic [ref=f4e11]:
+      - generic [ref=f4e12]: 查看或修改任意日期
+      - textbox "查看或修改任意日期" [ref=f4e13]: 2026-07-06
+      - button "切换日期" [ref=f4e14] [cursor=pointer]
+    - generic [ref=f4e15]:
+      - generic [ref=f4e16]:
+        - generic [ref=f4e17]: 当前规划周期
+        - strong [ref=f4e18]: 2026-07-01 至 2026-07-31
+      - generic [ref=f4e19]:
+        - generic [ref=f4e20]: 本月目标
+        - strong [ref=f4e21]: 207小时
+      - generic [ref=f4e22]:
+        - generic [ref=f4e23]: 本月已记录
+        - strong [ref=f4e24]: 36小时
+      - generic [ref=f4e25]:
+        - generic [ref=f4e26]: 当前账面缺口
+        - strong [ref=f4e27]: 171小时
+    - generic [ref=f4e28]:
+      - generic [ref=f4e29]:
+        - heading "月度记录进度" [level=2] [ref=f4e30]
+        - generic [ref=f4e31]: 17%
+      - paragraph [ref=f4e34]: 当前规划账面缺口为 171小时；每日建议仍受最低8小时约束。
+    - generic [ref=f4e35]:
+      - generic [ref=f4e36]:
+        - heading "周期设置" [level=2] [ref=f4e37]
+        - generic [ref=f4e38]: 规划方式
+        - combobox "规划方式" [ref=f4e39]:
+          - option "周平均"
+          - option "月平均" [selected]
+        - button "保存" [ref=f4e40] [cursor=pointer]
+      - generic [ref=f4e41]:
+        - heading "选中日期记录" [level=2] [ref=f4e42]
+        - generic [ref=f4e43]: 日期
+        - textbox "日期" [ref=f4e44]: 2026-07-06
+        - generic [ref=f4e45]: 上班
+        - textbox "上班" [ref=f4e46]: 09:00
+        - generic [ref=f4e47]: 下班
+        - textbox "下班" [ref=f4e48]: 20:30
+        - button "保存" [ref=f4e49] [cursor=pointer]
+      - generic [ref=f4e50]:
+        - heading "日历标记" [level=2] [ref=f4e51]
+        - generic [ref=f4e52]: 日期
+        - textbox "日期" [ref=f4e53]: 2026-07-06
+        - generic [ref=f4e54]: 类型
+        - combobox "类型" [ref=f4e55]:
+          - option "节假日" [selected]
+          - option "调休上班"
+        - button "保存" [ref=f4e56] [cursor=pointer]
+    - generic [ref=f4e57]:
+      - generic [ref=f4e58]:
+        - generic [ref=f4e59]:
+          - heading "非工作时间" [level=2] [ref=f4e60]
+          - paragraph [ref=f4e61]: 只扣除与打卡时段重叠的部分；启用规则发生重叠时只扣一次。
+        - generic [ref=f4e62]: 2 条启用规则
+      - generic [ref=f4e63]:
+        - generic [ref=f4e64]:
+          - generic [ref=f4e65]:
+            - generic [ref=f4e66]: 名称
+            - textbox "名称" [ref=f4e67]: 午休
+          - generic [ref=f4e68]:
+            - generic [ref=f4e69]: 开始
+            - textbox "开始" [ref=f4e70]: 12:00
+          - generic [ref=f4e71]:
+            - generic [ref=f4e72]: 结束
+            - textbox "结束" [ref=f4e73]: 13:30
+          - generic [ref=f4e74]:
+            - checkbox "启用" [checked] [ref=f4e75]
+            - generic [ref=f4e76]: 启用
+          - generic [ref=f4e77]:
+            - button "保存" [ref=f4e78] [cursor=pointer]
+            - button "删除" [ref=f4e79] [cursor=pointer]
+        - generic [ref=f4e80]:
+          - generic [ref=f4e81]:
+            - generic [ref=f4e82]: 名称
+            - textbox "名称" [ref=f4e83]: 晚间休息
+          - generic [ref=f4e84]:
+            - generic [ref=f4e85]: 开始
+            - textbox "开始" [ref=f4e86]: 19:30
+          - generic [ref=f4e87]:
+            - generic [ref=f4e88]: 结束
+            - textbox "结束" [ref=f4e89]: 20:00
+          - generic [ref=f4e90]:
+            - checkbox "启用" [checked] [ref=f4e91]
+            - generic [ref=f4e92]: 启用
+          - generic [ref=f4e93]:
+            - button "保存" [ref=f4e94] [cursor=pointer]
+            - button "删除" [ref=f4e95] [cursor=pointer]
+      - generic [ref=f4e96]:
+        - generic [ref=f4e97]:
+          - generic [ref=f4e98]: 新增规则
+          - textbox "新增规则" [ref=f4e99]:
+            - /placeholder: 例如：下午休息
+        - generic [ref=f4e100]:
+          - generic [ref=f4e101]: 开始
+          - textbox "开始" [ref=f4e102]
+        - generic [ref=f4e103]:
+          - generic [ref=f4e104]: 结束
+          - textbox "结束" [ref=f4e105]
+        - generic [ref=f4e106]:
+          - checkbox "启用" [checked] [ref=f4e107]
+          - generic [ref=f4e108]: 启用
+        - button "添加" [ref=f4e110] [cursor=pointer]
+    - generic [ref=f4e111]:
+      - generic [ref=f4e112]:
+        - heading "预测与记录" [level=2] [ref=f4e113]
+        - generic [ref=f4e114]: 23 个工作日
+      - table [ref=f4e116]:
+        - rowgroup [ref=f4e117]:
+          - row [ref=f4e118]:
+            - columnheader "日期" [ref=f4e119]
+            - columnheader "上班" [ref=f4e120]
+            - columnheader "下班" [ref=f4e121]
+            - columnheader "有效工时" [ref=f4e122]
+            - columnheader "建议工时" [ref=f4e123]
+            - columnheader "累计余额" [ref=f4e124]
+            - columnheader "状态" [ref=f4e125]
+            - columnheader "操作" [ref=f4e126]
+        - rowgroup [ref=f4e127]:
+          - row [ref=f4e128]:
+            - cell "2026-07-01" [ref=f4e129]
+            - cell [ref=f4e130]:
+              - textbox [ref=f4e131]: 09:00
+            - cell [ref=f4e132]:
+              - textbox [ref=f4e133]: 20:10
+            - cell "9小时10分钟" [ref=f4e134]
+            - cell "-" [ref=f4e135]
+            - cell "+10分钟 当日 +10分钟" [ref=f4e136]:
+              - generic [ref=f4e137]: +10分钟
+              - generic [ref=f4e138]: 当日 +10分钟
+            - cell "已记录" [ref=f4e139]
+            - cell [ref=f4e141]:
+              - button "保存" [ref=f4e142] [cursor=pointer]
+          - row [ref=f4e143]:
+            - cell "2026-07-02" [ref=f4e144]
+            - cell [ref=f4e145]:
+              - textbox [ref=f4e146]: 09:00
+            - cell [ref=f4e147]:
+              - textbox [ref=f4e148]: 18:50
+            - cell "8小时20分钟" [ref=f4e149]
+            - cell "-" [ref=f4e150]
+            - cell "-30分钟 当日 -40分钟" [ref=f4e151]:
+              - generic [ref=f4e152]: "-30分钟"
+              - generic [ref=f4e153]: 当日 -40分钟
+            - cell "已记录" [ref=f4e154]
+            - cell [ref=f4e156]:
+              - button "保存" [ref=f4e157] [cursor=pointer]
+          - row [ref=f4e158]:
+            - cell "2026-07-03" [ref=f4e159]
+            - cell [ref=f4e160]:
+              - textbox [ref=f4e161]: 09:00
+            - cell [ref=f4e162]:
+              - textbox [ref=f4e163]: 19:30
+            - cell "9小时" [ref=f4e164]
+            - cell "-" [ref=f4e165]
+            - cell "-30分钟 当日 0分钟" [ref=f4e166]:
+              - generic [ref=f4e167]: "-30分钟"
+              - generic [ref=f4e168]: 当日 0分钟
+            - cell "已记录" [ref=f4e169]
+            - cell [ref=f4e171]:
+              - button "保存" [ref=f4e172] [cursor=pointer]
+          - row [ref=f4e173]:
+            - cell "2026-07-06" [ref=f4e174]
+            - cell [ref=f4e175]:
+              - textbox [ref=f4e176]: 09:00
+            - cell [ref=f4e177]:
+              - textbox [ref=f4e178]: 20:30
+            - cell "9小时30分钟" [ref=f4e179]
+            - cell "-" [ref=f4e180]
+            - cell "0分钟 当日 +30分钟" [ref=f4e181]:
+              - generic [ref=f4e182]: 0分钟
+              - generic [ref=f4e183]: 当日 +30分钟
+            - cell "已记录" [ref=f4e184]
+            - cell [ref=f4e186]:
+              - button "保存" [ref=f4e187] [cursor=pointer]
+          - row [ref=f4e188]:
+            - cell "2026-07-07" [ref=f4e189]
+            - cell [ref=f4e190]:
+              - textbox [ref=f4e191]
+            - cell [ref=f4e192]:
+              - textbox [ref=f4e193]
+            - cell "-" [ref=f4e194]
+            - cell "9小时" [ref=f4e195]
+            - cell "-" [ref=f4e196]
+            - cell "按剩余目标分摊" [ref=f4e197]
+            - cell [ref=f4e199]:
+              - button "保存" [ref=f4e200] [cursor=pointer]
+          - row [ref=f4e201]:
+            - cell "2026-07-08" [ref=f4e202]
+            - cell [ref=f4e203]:
+              - textbox [ref=f4e204]
+            - cell [ref=f4e205]:
+              - textbox [ref=f4e206]
+            - cell "-" [ref=f4e207]
+            - cell "9小时" [ref=f4e208]
+            - cell "-" [ref=f4e209]
+            - cell "按剩余目标分摊" [ref=f4e210]
+            - cell [ref=f4e212]:
+              - button "保存" [ref=f4e213] [cursor=pointer]
+          - row [ref=f4e214]:
+            - cell "2026-07-09" [ref=f4e215]
+            - cell [ref=f4e216]:
+              - textbox [ref=f4e217]
+            - cell [ref=f4e218]:
+              - textbox [ref=f4e219]
+            - cell "-" [ref=f4e220]
+            - cell "9小时" [ref=f4e221]
+            - cell "-" [ref=f4e222]
+            - cell "按剩余目标分摊" [ref=f4e223]
+            - cell [ref=f4e225]:
+              - button "保存" [ref=f4e226] [cursor=pointer]
+          - row [ref=f4e227]:
+            - cell "2026-07-10" [ref=f4e228]
+            - cell [ref=f4e229]:
+              - textbox [ref=f4e230]
+            - cell [ref=f4e231]:
+              - textbox [ref=f4e232]
+            - cell "-" [ref=f4e233]
+            - cell "9小时" [ref=f4e234]
+            - cell "-" [ref=f4e235]
+            - cell "按剩余目标分摊" [ref=f4e236]
+            - cell [ref=f4e238]:
+              - button "保存" [ref=f4e239] [cursor=pointer]
+          - row [ref=f4e240]:
+            - cell "2026-07-13" [ref=f4e241]
+            - cell [ref=f4e242]:
+              - textbox [ref=f4e243]
+            - cell [ref=f4e244]:
+              - textbox [ref=f4e245]
+            - cell "-" [ref=f4e246]
+            - cell "9小时" [ref=f4e247]
+            - cell "-" [ref=f4e248]
+            - cell "按剩余目标分摊" [ref=f4e249]
+            - cell [ref=f4e251]:
+              - button "保存" [ref=f4e252] [cursor=pointer]
+          - row [ref=f4e253]:
+            - cell "2026-07-14" [ref=f4e254]
+            - cell [ref=f4e255]:
+              - textbox [ref=f4e256]
+            - cell [ref=f4e257]:
+              - textbox [ref=f4e258]
+            - cell "-" [ref=f4e259]
+            - cell "9小时" [ref=f4e260]
+            - cell "-" [ref=f4e261]
+            - cell "按剩余目标分摊" [ref=f4e262]
+            - cell [ref=f4e264]:
+              - button "保存" [ref=f4e265] [cursor=pointer]
+          - row [ref=f4e266]:
+            - cell "2026-07-15" [ref=f4e267]
+            - cell [ref=f4e268]:
+              - textbox [ref=f4e269]
+            - cell [ref=f4e270]:
+              - textbox [ref=f4e271]
+            - cell "-" [ref=f4e272]
+            - cell "9小时" [ref=f4e273]
+            - cell "-" [ref=f4e274]
+            - cell "按剩余目标分摊" [ref=f4e275]
+            - cell [ref=f4e277]:
+              - button "保存" [ref=f4e278] [cursor=pointer]
+          - row [ref=f4e279]:
+            - cell "2026-07-16" [ref=f4e280]
+            - cell [ref=f4e281]:
+              - textbox [ref=f4e282]
+            - cell [ref=f4e283]:
+              - textbox [ref=f4e284]
+            - cell "-" [ref=f4e285]
+            - cell "9小时" [ref=f4e286]
+            - cell "-" [ref=f4e287]
+            - cell "按剩余目标分摊" [ref=f4e288]
+            - cell [ref=f4e290]:
+              - button "保存" [ref=f4e291] [cursor=pointer]
+          - row [ref=f4e292]:
+            - cell "2026-07-17" [ref=f4e293]
+            - cell [ref=f4e294]:
+              - textbox [ref=f4e295]
+            - cell [ref=f4e296]:
+              - textbox [ref=f4e297]
+            - cell "-" [ref=f4e298]
+            - cell "9小时" [ref=f4e299]
+            - cell "-" [ref=f4e300]
+            - cell "按剩余目标分摊" [ref=f4e301]
+            - cell [ref=f4e303]:
+              - button "保存" [ref=f4e304] [cursor=pointer]
+          - row [ref=f4e305]:
+            - cell "2026-07-20" [ref=f4e306]
+            - cell [ref=f4e307]:
+              - textbox [ref=f4e308]
+            - cell [ref=f4e309]:
+              - textbox [ref=f4e310]
+            - cell "-" [ref=f4e311]
+            - cell "9小时" [ref=f4e312]
+            - cell "-" [ref=f4e313]
+            - cell "按剩余目标分摊" [ref=f4e314]
+            - cell [ref=f4e316]:
+              - button "保存" [ref=f4e317] [cursor=pointer]
+          - row [ref=f4e318]:
+            - cell "2026-07-21" [ref=f4e319]
+            - cell [ref=f4e320]:
+              - textbox [ref=f4e321]
+            - cell [ref=f4e322]:
+              - textbox [ref=f4e323]
+            - cell "-" [ref=f4e324]
+            - cell "9小时" [ref=f4e325]
+            - cell "-" [ref=f4e326]
+            - cell "按剩余目标分摊" [ref=f4e327]
+            - cell [ref=f4e329]:
+              - button "保存" [ref=f4e330] [cursor=pointer]
+          - row [ref=f4e331]:
+            - cell "2026-07-22" [ref=f4e332]
+            - cell [ref=f4e333]:
+              - textbox [ref=f4e334]
+            - cell [ref=f4e335]:
+              - textbox [ref=f4e336]
+            - cell "-" [ref=f4e337]
+            - cell "9小时" [ref=f4e338]
+            - cell "-" [ref=f4e339]
+            - cell "按剩余目标分摊" [ref=f4e340]
+            - cell [ref=f4e342]:
+              - button "保存" [ref=f4e343] [cursor=pointer]
+          - row [ref=f4e344]:
+            - cell "2026-07-23" [ref=f4e345]
+            - cell [ref=f4e346]:
+              - textbox [ref=f4e347]
+            - cell [ref=f4e348]:
+              - textbox [ref=f4e349]
+            - cell "-" [ref=f4e350]
+            - cell "9小时" [ref=f4e351]
+            - cell "-" [ref=f4e352]
+            - cell "按剩余目标分摊" [ref=f4e353]
+            - cell [ref=f4e355]:
+              - button "保存" [ref=f4e356] [cursor=pointer]
+          - row [ref=f4e357]:
+            - cell "2026-07-24" [ref=f4e358]
+            - cell [ref=f4e359]:
+              - textbox [ref=f4e360]
+            - cell [ref=f4e361]:
+              - textbox [ref=f4e362]
+            - cell "-" [ref=f4e363]
+            - cell "9小时" [ref=f4e364]
+            - cell "-" [ref=f4e365]
+            - cell "按剩余目标分摊" [ref=f4e366]
+            - cell [ref=f4e368]:
+              - button "保存" [ref=f4e369] [cursor=pointer]
+          - row [ref=f4e370]:
+            - cell "2026-07-27" [ref=f4e371]
+            - cell [ref=f4e372]:
+              - textbox [ref=f4e373]
+            - cell [ref=f4e374]:
+              - textbox [ref=f4e375]
+            - cell "-" [ref=f4e376]
+            - cell "9小时" [ref=f4e377]
+            - cell "-" [ref=f4e378]
+            - cell "按剩余目标分摊" [ref=f4e379]
+            - cell [ref=f4e381]:
+              - button "保存" [ref=f4e382] [cursor=pointer]
+          - row [ref=f4e383]:
+            - cell "2026-07-28" [ref=f4e384]
+            - cell [ref=f4e385]:
+              - textbox [ref=f4e386]
+            - cell [ref=f4e387]:
+              - textbox [ref=f4e388]
+            - cell "-" [ref=f4e389]
+            - cell "9小时" [ref=f4e390]
+            - cell "-" [ref=f4e391]
+            - cell "按剩余目标分摊" [ref=f4e392]
+            - cell [ref=f4e394]:
+              - button "保存" [ref=f4e395] [cursor=pointer]
+          - row [ref=f4e396]:
+            - cell "2026-07-29" [ref=f4e397]
+            - cell [ref=f4e398]:
+              - textbox [ref=f4e399]
+            - cell [ref=f4e400]:
+              - textbox [ref=f4e401]
+            - cell "-" [ref=f4e402]
+            - cell "9小时" [ref=f4e403]
+            - cell "-" [ref=f4e404]
+            - cell "按剩余目标分摊" [ref=f4e405]
+            - cell [ref=f4e407]:
+              - button "保存" [ref=f4e408] [cursor=pointer]
+          - row [ref=f4e409]:
+            - cell "2026-07-30" [ref=f4e410]
+            - cell [ref=f4e411]:
+              - textbox [ref=f4e412]
+            - cell [ref=f4e413]:
+              - textbox [ref=f4e414]
+            - cell "-" [ref=f4e415]
+            - cell "9小时" [ref=f4e416]
+            - cell "-" [ref=f4e417]
+            - cell "按剩余目标分摊" [ref=f4e418]
+            - cell [ref=f4e420]:
+              - button "保存" [ref=f4e421] [cursor=pointer]
+          - row [ref=f4e422]:
+            - cell "2026-07-31" [ref=f4e423]
+            - cell [ref=f4e424]:
+              - textbox [ref=f4e425]
+            - cell [ref=f4e426]:
+              - textbox [ref=f4e427]
+            - cell "-" [ref=f4e428]
+            - cell "9小时" [ref=f4e429]
+            - cell "-" [ref=f4e430]
+            - cell "按剩余目标分摊" [ref=f4e431]
+            - cell [ref=f4e433]:
+              - button "保存" [ref=f4e434] [cursor=pointer]
+    - generic [ref=f4e435]:
+      - generic [ref=f4e436]:
+        - heading "本月日历调整" [level=2] [ref=f4e437]
+        - generic [ref=f4e438]: 0 条
+      - paragraph [ref=f4e440]: 当前月份没有日历调整。

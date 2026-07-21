@@ -1,0 +1,7 @@
+.pytest_cache/
+__pycache__/
+*.py[cod]
+workhours.sqlite3
+server.out.log
+server.err.log
+.venv/

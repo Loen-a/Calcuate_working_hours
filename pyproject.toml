@@ -1,0 +1,29 @@
+[project]
+name = "calculate-working-hours"
+version = "0.1.0"
+description = "Local web app for predicting weekly or monthly average working hours."
+authors = [
+    { name = "Local User", email = "local@example.com" },
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "flask>=3.0.0,<4.0.0",
+]
+
+[project.scripts]
+workhours-web = "workhours.web:main"
+
+[tool.poetry]
+packages = [{ include = "workhours", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

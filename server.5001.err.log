@@ -1,0 +1,8 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+Press CTRL+C to quit
+127.0.0.1 - - [13/Jul/2026 18:47:32] "GET /?reference_date=2026-07-13 HTTP/1.1" 200 -
+127.0.0.1 - - [13/Jul/2026 18:47:55] "GET /?reference_date=2026-07-13 HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 17:59:38] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 17:59:38] "GET /static/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 17:59:38] "GET /favicon.ico HTTP/1.1" 404 -

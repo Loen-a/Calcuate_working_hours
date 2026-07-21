@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>工作时长预测</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>工作时长预测</h1>
+        <p>今天 {{ today.isoformat() }} · 正在查看 {{ selected_date.isoformat() }} · {{ settings.period|mode_label }} · {{ enabled_interval_count }} 条启用规则</p>
+      </div>
+      <form class="quick-actions" method="post" action="{{ url_for('clock_in') }}">
+        <button type="submit">上班</button>
+      </form>
+      <form class="quick-actions" method="post" action="{{ url_for('clock_out') }}">
+        <button type="submit">下班</button>
+      </form>
+    </header>
+
+    <main class="layout">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-list" aria-live="polite">
+            {% for category, message in messages %}
+              <p class="flash-message {{ category }}">{{ message }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form class="date-focus" method="get" action="{{ url_for('index') }}">
+        <label for="reference_date">查看或修改任意日期</label>
+        <input id="reference_date" name="reference_date" type="date" value="{{ selected_date.isoformat() }}" required>
+        <button type="submit">切换日期</button>
+      </form>
+
+      <section
+        class="summary-band"
+        data-month-target-minutes="{{ forecast.month_target_minutes }}"
+        data-carryover-minutes="{{ forecast.carryover_minutes }}"
+      >
+        <div>
+          <span class="label">当前规划周期</span>
+          <strong>{{ forecast.period_start.isoformat() }} 至 {{ forecast.period_end.isoformat() }}</strong>
+        </div>
+        <div>
+          <span class="label">本月目标</span>
+          <strong>{{ forecast.month_target_minutes|minutes }}</strong>
+        </div>
+        <div>
+          <span class="label">本月已记录</span>
+          <strong>{{ forecast.month_completed_minutes|minutes }}</strong>
+        </div>
+        <div>
+          <span class="label">当前账面缺口</span>
+          <strong>{{ forecast.remaining_target_minutes|minutes }}</strong>
+        </div>
+      </section>
+
+      <section class="progress-section">
+        <div class="progress-head">
+          <h2>月度记录进度</h2>
+          <span>{{ period_progress }}%</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" style="width: {{ period_progress }}%"></div>
+        </div>
+
+        {% if forecast.missing_history_days %}
+          <p
+            id="missing-history-warning"
+            class="status warning"
+            data-missing-count="{{ forecast.missing_history_days|length }}"
+          >
+            本月有 {{ forecast.missing_history_days|length }} 个历史工作日待补录：
+            {% for day in forecast.missing_history_days %}
+              {{ day.isoformat() }}{% if not loop.last %}、{% endif %}
+            {% endfor %}。预测暂按9小时作为中性值，补录后会自动重算。
+          </p>
+        {% endif %}
+
+        {% if settings.period.value == 'week' %}
+          <p class="status">
+            本周基础目标 {{ forecast.base_target_minutes|minutes }} ·
+            月内前序差额 {{ forecast.carryover_minutes|signed_minutes }}（正数为欠时） ·
+            调整后本周目标 {{ forecast.target_minutes|minutes }}
+          </p>
+        {% endif %}
+
+        {% if forecast.goal_met %}
+          <p class="status good">当前规划目标已完成，后续正常工作日仍按最低8小时显示。</p>
+        {% else %}
+          <p class="status">当前规划账面缺口为 {{ forecast.remaining_target_minutes|minutes }}；每日建议仍受最低8小时约束。</p>
+        {% endif %}
+      </section>
+
+      <section class="tools-grid">
+        <form class="tool-panel" method="post" action="{{ url_for('update_settings') }}">
+          <h2>周期设置</h2>
+          <input type="hidden" name="reference_date" value="{{ selected_date.isoformat() }}">
+          <label for="period">规划方式</label>
+          <select id="period" name="period">
+            {% for mode in period_modes %}
+              <option value="{{ mode.value }}" {% if mode == settings.period %}selected{% endif %}>{{ mode|mode_label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">保存</button>
+        </form>
+
+        <form class="tool-panel" method="post" action="{{ url_for('save_entry') }}">
+          <h2>选中日期记录</h2>
+          <label for="work_date">日期</label>
+          <input id="work_date" name="work_date" type="date" value="{{ selected_date.isoformat() }}" required>
+          <label for="start_time">上班</label>
+          <input id="start_time" name="start_time" type="time" value="{% if selected_entry and selected_entry.start %}{{ selected_entry.start.strftime('%H:%M') }}{% endif %}">
+          <label for="end_time">下班</label>
+          <input id="end_time" name="end_time" type="time" value="{% if selected_entry and selected_entry.end %}{{ selected_entry.end.strftime('%H:%M') }}{% endif %}">
+          <button type="submit">保存</button>
+        </form>
+
+        <form class="tool-panel" method="post" action="{{ url_for('save_calendar_override') }}">
+          <h2>日历标记</h2>
+          <label for="calendar_date">日期</label>
+          <input id="calendar_date" name="work_date" type="date" value="{{ selected_date.isoformat() }}" required>
+          <label for="kind">类型</label>
+          <select id="kind" name="kind">
+            {% for kind in override_kinds %}
+              <option value="{{ kind.value }}">{{ kind|override_label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">保存</button>
+        </form>
+      </section>
+
+      <section class="interval-section">
+        <div class="section-head">
+          <div>
+            <h2>非工作时间</h2>
+            <p class="section-copy">只扣除与打卡时段重叠的部分；启用规则发生重叠时只扣一次。</p>
+          </div>
+          <span>{{ enabled_interval_count }} 条启用规则</span>
+        </div>
+
+        <div class="interval-list">
+          {% for interval in non_working_intervals %}
+            <form
+              class="interval-row"
+              method="post"
+              action="{{ url_for('save_non_working_interval') }}"
+              data-interval-id="{{ interval.interval_id }}"
+              data-enabled="{{ 'true' if interval.enabled else 'false' }}"
+            >
+              <input type="hidden" name="interval_id" value="{{ interval.interval_id }}">
+              <input type="hidden" name="reference_date" value="{{ selected_date.isoformat() }}">
+
+              <label class="field-group" for="interval-name-{{ interval.interval_id }}">
+                <span>名称</span>
+                <input id="interval-name-{{ interval.interval_id }}" name="name" type="text" value="{{ interval.name }}" required>
+              </label>
+              <label class="field-group" for="interval-start-{{ interval.interval_id }}">
+                <span>开始</span>
+                <input id="interval-start-{{ interval.interval_id }}" name="start_time" type="time" value="{{ interval.start.strftime('%H:%M') }}" required>
+              </label>
+              <label class="field-group" for="interval-end-{{ interval.interval_id }}">
+                <span>结束</span>
+                <input id="interval-end-{{ interval.interval_id }}" name="end_time" type="time" value="{{ interval.end.strftime('%H:%M') }}" required>
+              </label>
+              <label class="toggle-field" for="interval-enabled-{{ interval.interval_id }}">
+                <input id="interval-enabled-{{ interval.interval_id }}" name="enabled" type="checkbox" value="1" {% if interval.enabled %}checked{% endif %}>
+                <span>启用</span>
+              </label>
+              <div class="interval-actions">
+                <button type="submit">保存</button>
+                <button
+                  class="danger-button"
+                  type="submit"
+                  formaction="{{ url_for('delete_non_working_interval') }}"
+                  formnovalidate
+                  onclick="return confirm('确定删除这条非工作时间规则吗？')"
+                >删除</button>
+              </div>
+            </form>
+          {% else %}
+            <p class="empty interval-empty">当前没有非工作时间规则。</p>
+          {% endfor %}
+        </div>
+
+        <form class="interval-create" method="post" action="{{ url_for('save_non_working_interval') }}">
+          <input type="hidden" name="reference_date" value="{{ selected_date.isoformat() }}">
+          <label class="field-group" for="new-interval-name">
+            <span>新增规则</span>
+            <input id="new-interval-name" name="name" type="text" placeholder="例如：下午休息" required>
+          </label>
+          <label class="field-group" for="new-interval-start">
+            <span>开始</span>
+            <input id="new-interval-start" name="start_time" type="time" required>
+          </label>
+          <label class="field-group" for="new-interval-end">
+            <span>结束</span>
+            <input id="new-interval-end" name="end_time" type="time" required>
+          </label>
+          <label class="toggle-field" for="new-interval-enabled">
+            <input id="new-interval-enabled" name="enabled" type="checkbox" value="1" checked>
+            <span>启用</span>
+          </label>
+          <div class="interval-actions">
+            <button type="submit">添加</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="table-section">
+        <div class="section-head">
+          <h2>预测与记录</h2>
+          <span>{{ forecast.workdays|length }} 个工作日</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>上班</th>
+                <th>下班</th>
+                <th>有效工时</th>
+                <th>建议工时</th>
+                <th>累计余额</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for day, item in forecast.days.items() %}
+                {% set entry = entries.get(day) %}
+                {% set form_id = 'entry-form-' ~ day.isoformat() %}
+                <tr data-work-date="{{ day.isoformat() }}">
+                  <td class="entry-date-cell">
+                    <form id="{{ form_id }}" method="post" action="{{ url_for('save_entry') }}"></form>
+                    <input type="hidden" name="work_date" value="{{ day.isoformat() }}" form="{{ form_id }}">
+                    {{ day.isoformat() }}
+                  </td>
+                  <td>
+                    <input class="table-input" type="time" name="start_time" value="{% if entry and entry.start %}{{ entry.start.strftime('%H:%M') }}{% endif %}" form="{{ form_id }}">
+                  </td>
+                  <td>
+                    <input class="table-input" type="time" name="end_time" value="{% if entry and entry.end %}{{ entry.end.strftime('%H:%M') }}{% endif %}" form="{{ form_id }}">
+                  </td>
+                  <td>{{ item.actual_minutes|minutes }}</td>
+                  <td>{{ item.recommended_minutes|minutes }}</td>
+                  <td
+                    class="balance-cell"
+                    data-daily-balance-minutes="{% if item.daily_balance_minutes is not none %}{{ item.daily_balance_minutes }}{% endif %}"
+                    data-cumulative-balance-minutes="{% if item.cumulative_balance_minutes is not none %}{{ item.cumulative_balance_minutes }}{% endif %}"
+                  >
+                    {% if item.cumulative_balance_minutes is not none %}
+                      {% set cumulative_class = 'positive' if item.cumulative_balance_minutes > 0 else ('negative' if item.cumulative_balance_minutes < 0 else 'neutral') %}
+                      {% set daily_class = 'positive' if item.daily_balance_minutes > 0 else ('negative' if item.daily_balance_minutes < 0 else 'neutral') %}
+                      <span class="balance-value {{ cumulative_class }}">{{ item.cumulative_balance_minutes|balance_minutes }}</span>
+                      <small class="balance-daily {{ daily_class }}">当日 {{ item.daily_balance_minutes|balance_minutes }}</small>
+                    {% else %}
+                      <span class="balance-empty">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge {% if item.compliant is sameas false or item.reason == 'missing_entry' %}bad{% elif item.reason == 'goal_met_minimum' %}good{% endif %}">
+                      {{ item.reason|reason_label }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="small-button" type="submit" form="{{ form_id }}">保存</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="table-section">
+        <div class="section-head">
+          <h2>本月日历调整</h2>
+          <span>{{ overrides|length }} 条</span>
+        </div>
+        <div class="override-list">
+          {% if overrides %}
+            {% for work_date, kind in overrides.items() %}
+              <form class="override-row" method="post" action="{{ url_for('delete_calendar_override') }}">
+                <input type="hidden" name="work_date" value="{{ work_date.isoformat() }}">
+                <span>{{ work_date.isoformat() }}</span>
+                <strong>{{ kind|override_label }}</strong>
+                <button type="submit">删除</button>
+              </form>
+            {% endfor %}
+          {% else %}
+            <p class="empty">当前月份没有日历调整。</p>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5004
+Press CTRL+C to quit
+127.0.0.1 - - [15/Jul/2026 17:42:30] "GET /?reference_date=2026-07-15 HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 17:48:59] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 17:48:59] "GET /static/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 18:06:39] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Jul/2026 18:06:39] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 08:23:17] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 08:23:17] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 08:23:45] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [16/Jul/2026 08:23:45] "GET /?reference_date=2026-07-15 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 08:23:45] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 08:23:59] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [16/Jul/2026 08:23:59] "GET /?reference_date=2026-07-16 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 08:23:59] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 09:56:32] "GET /?reference_date=2026-07-16 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 09:56:32] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 18:01:56] "GET /?reference_date=2026-07-16 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 18:01:56] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Jul/2026 18:02:31] "POST /settings HTTP/1.1" 302 -
+127.0.0.1 - - [16/Jul/2026 18:02:31] "GET /?reference_date=2026-07-16 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Jul/2026 18:02:31] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [17/Jul/2026 10:33:06] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [17/Jul/2026 10:33:06] "GET /?reference_date=2026-07-16 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jul/2026 10:33:06] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [17/Jul/2026 10:33:28] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [17/Jul/2026 10:33:28] "GET /?reference_date=2026-07-17 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jul/2026 10:33:28] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jul/2026 16:13:53] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [20/Jul/2026 16:13:53] "GET /?reference_date=2026-07-17 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 16:13:53] "GET /static/styles.css HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jul/2026 16:14:07] "POST /entries HTTP/1.1" 302 -
+127.0.0.1 - - [20/Jul/2026 16:14:07] "GET /?reference_date=2026-07-20 HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 16:14:07] "GET /static/styles.css HTTP/1.1" 304 -
