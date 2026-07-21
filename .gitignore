@@ -5,3 +5,4 @@ workhours.sqlite3
 server.out.log
 server.err.log
 .venv/
+.vscode/
