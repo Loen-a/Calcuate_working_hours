@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# Calcuate_working_hours
-=======
 # Calculate Working Hours
 
 用于记录弹性工时并按周平均或自然月平均预测每日建议工时的本地 Web 应用。
