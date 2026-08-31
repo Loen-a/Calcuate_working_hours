@@ -1,5 +1,7 @@
 from datetime import date, time
 
+import pytest
+
 from workhours.domain import (
     DayOverride,
     ForecastSettings,
@@ -13,6 +15,32 @@ SETTINGS = ForecastSettings(
     period=PeriodMode.MONTH,
     non_working_intervals=(),
 )
+
+
+@pytest.mark.parametrize(
+    ("prior_end", "expected_earliest_end"),
+    (
+        (time(19, 30), time(17, 30)),  # Prior balance +1h: work the 8h minimum.
+        (time(17, 30), time(19, 30)),  # Prior balance -1h: work 10h.
+    ),
+)
+def test_prior_month_balance_directly_adjusts_current_day_earliest_end(
+    prior_end: time,
+    expected_earliest_end: time,
+):
+    prior_day = date(2026, 7, 3)
+    current_day = date(2026, 7, 6)
+    forecast = build_forecast(
+        reference_date=current_day,
+        entries={
+            prior_day: WorkEntry(prior_day, time(8), prior_end),
+            current_day: WorkEntry(current_day, time(8), None),
+        },
+        overrides={},
+        settings=ForecastSettings(period=PeriodMode.MONTH),
+    )
+
+    assert forecast.days[current_day].suggested_end == expected_earliest_end
 
 
 def test_month_balance_accumulates_signed_daily_differences():

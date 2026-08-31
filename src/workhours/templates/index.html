@@ -226,7 +226,7 @@
                 <th>上班</th>
                 <th>下班</th>
                 <th>有效工时</th>
-                <th>建议工时</th>
+                <th>最早下班时间</th>
                 <th>累计余额</th>
                 <th>状态</th>
                 <th>操作</th>
@@ -249,7 +249,13 @@
                     <input class="table-input" type="time" name="end_time" value="{% if entry and entry.end %}{{ entry.end.strftime('%H:%M') }}{% endif %}" form="{{ form_id }}">
                   </td>
                   <td>{{ item.actual_minutes|minutes }}</td>
-                  <td>{{ item.recommended_minutes|minutes }}</td>
+                  <td class="earliest-end-cell">
+                    {% if item.suggested_end %}
+                      <span class="earliest-end-value">{% if item.suggested_end_day_offset == 1 %}次日 {% elif item.suggested_end_day_offset > 1 %}{{ item.suggested_end_day_offset }}天后 {% endif %}{{ item.suggested_end.strftime('%H:%M') }}</span>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
                   <td
                     class="balance-cell"
                     data-daily-balance-minutes="{% if item.daily_balance_minutes is not none %}{{ item.daily_balance_minutes }}{% endif %}"

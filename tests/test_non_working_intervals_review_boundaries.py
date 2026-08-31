@@ -36,7 +36,7 @@ def test_overnight_suggested_end_exposes_next_day_offset():
     assert day.suggested_end_day_offset == 1
 
 
-def test_web_hides_overnight_suggested_end(tmp_path):
+def test_web_marks_overnight_earliest_end_as_next_day(tmp_path):
     app = create_app(
         database_path=tmp_path / "workhours.sqlite3",
         today_provider=lambda: date(2026, 7, 6),
@@ -55,8 +55,8 @@ def test_web_hides_overnight_suggested_end(tmp_path):
     )
 
     body = response.get_data(as_text=True)
-    assert "<th>建议下班</th>" not in body
-    assert "次日 08:00" not in body
+    assert "<th>最早下班时间</th>" in body
+    assert "次日 08:00" in body
 
 
 def test_store_rejects_second_level_intervals(tmp_path):

@@ -36,7 +36,8 @@ def test_weekly_dashboard_uses_month_ledger_but_displays_current_week(app):
     assert 'data-carryover-minutes="480"' in body
     assert "entry-form-2026-07-13" in body
     assert "entry-form-2026-07-10" not in body
-    assert "10小时36分钟" in body
+    assert "<th>最早下班时间</th>" in body
+    assert "<th>建议工时</th>" not in body
 
 
 def test_dashboard_warns_when_month_history_is_incomplete(app):

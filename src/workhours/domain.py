@@ -173,7 +173,11 @@ def build_forecast(
 
     month_target = len(month_workdays) * settings.target_minutes_per_day
     month_completed = _completed_minutes(month_workdays, entries, settings)
-    monthly_balances = _monthly_balances(month_workdays, entries, settings)
+    monthly_balances, balances_before_day = _monthly_balances(
+        month_workdays,
+        entries,
+        settings,
+    )
     missing_history = [
         day
         for day in month_workdays
@@ -259,7 +263,11 @@ def build_forecast(
                 goal_met,
                 settings,
             )
-            suggestion = _suggested_end(entry, recommendation, settings)
+            required_minutes = max(
+                settings.minimum_minutes_per_day,
+                settings.target_minutes_per_day - balances_before_day[day],
+            )
+            suggestion = _suggested_end(entry, required_minutes, settings)
             forecast = DayForecast(
                 work_date=day,
                 is_workday=True,
@@ -322,10 +330,15 @@ def _monthly_balances(
     workdays: list[date],
     entries: dict[date, WorkEntry],
     settings: ForecastSettings,
-) -> dict[date, tuple[int | None, int | None]]:
+) -> tuple[
+    dict[date, tuple[int | None, int | None]],
+    dict[date, int],
+]:
     balances: dict[date, tuple[int | None, int | None]] = {}
+    balances_before_day: dict[date, int] = {}
     cumulative = 0
     for day in workdays:
+        balances_before_day[day] = cumulative
         actual = _actual_minutes(day, entries, settings)
         if actual is None:
             balances[day] = (None, None)
@@ -334,7 +347,7 @@ def _monthly_balances(
         daily = actual - settings.target_minutes_per_day
         cumulative += daily
         balances[day] = (daily, cumulative)
-    return balances
+    return balances, balances_before_day
 
 
 def _recommended_minutes(
