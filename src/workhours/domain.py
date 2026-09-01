@@ -60,6 +60,8 @@ class DayForecast:
     actual_minutes: int | None
     daily_balance_minutes: int | None
     cumulative_balance_minutes: int | None
+    balance_before_minutes: int
+    required_minutes: int | None
     recommended_minutes: int | None
     suggested_end: time | None
     suggested_end_day_offset: int | None
@@ -235,6 +237,8 @@ def build_forecast(
                 actual_minutes=actual,
                 daily_balance_minutes=daily_balance,
                 cumulative_balance_minutes=cumulative_balance,
+                balance_before_minutes=balances_before_day[day],
+                required_minutes=None,
                 recommended_minutes=None,
                 suggested_end=None,
                 suggested_end_day_offset=None,
@@ -248,6 +252,8 @@ def build_forecast(
                 actual_minutes=None,
                 daily_balance_minutes=daily_balance,
                 cumulative_balance_minutes=cumulative_balance,
+                balance_before_minutes=balances_before_day[day],
+                required_minutes=None,
                 recommended_minutes=None,
                 suggested_end=None,
                 suggested_end_day_offset=None,
@@ -274,6 +280,8 @@ def build_forecast(
                 actual_minutes=None,
                 daily_balance_minutes=daily_balance,
                 cumulative_balance_minutes=cumulative_balance,
+                balance_before_minutes=balances_before_day[day],
+                required_minutes=required_minutes,
                 recommended_minutes=recommendation,
                 suggested_end=suggestion[0] if suggestion else None,
                 suggested_end_day_offset=suggestion[1] if suggestion else None,

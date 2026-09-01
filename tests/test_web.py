@@ -135,3 +135,31 @@ def test_prediction_table_exposes_inline_entry_editing(app):
     assert "entry-form-2026-07-01" in body
     assert 'form="entry-form-2026-07-01"' in body
     assert "<th>操作</th>" in body
+
+
+@pytest.mark.parametrize(
+    ("return_target", "expected_anchor"),
+    (
+        ("selected_entry", "selected-entry"),
+        ("prediction", "prediction-2026-07-06"),
+    ),
+)
+def test_entry_save_returns_to_the_originating_record(
+    app,
+    return_target: str,
+    expected_anchor: str,
+):
+    response = app.test_client().post(
+        "/entries",
+        data={
+            "work_date": "2026-07-06",
+            "start_time": "08:00",
+            "end_time": "",
+            "return_target": return_target,
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(
+        f"?reference_date=2026-07-06#{expected_anchor}"
+    )

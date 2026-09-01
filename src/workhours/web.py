@@ -4,11 +4,13 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import Callable
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 
 from workhours.domain import (
+    DayForecast,
     DayOverride,
     Forecast,
+    ForecastSettings,
     NonWorkingInterval,
     PeriodMode,
     WorkEntry,
@@ -42,6 +44,56 @@ def create_app(
         dashboard = _build_dashboard(store, today, selected_date)
         return render_template("index.html", **dashboard)
 
+    @app.get("/preview/earliest-end")
+    def preview_earliest_end():
+        try:
+            work_date = _parse_required_date(request.args.get("work_date"))
+            start = _parse_time(request.args.get("start_time"))
+            if start is None:
+                raise ValueError("Start time is required")
+        except (TypeError, ValueError):
+            return jsonify({"error": "日期或上班时间无效"}), 400
+
+        settings = store.get_settings()
+        month_start, month_end = period_bounds(work_date, PeriodMode.MONTH)
+        overrides = store.list_overrides(month_start, month_end)
+        entries = store.list_entries(month_start, month_end)
+        preview = _preview_day_forecast(
+            work_date,
+            start,
+            entries,
+            overrides,
+            settings,
+        )
+        if preview is None or preview.required_minutes is None:
+            return jsonify({"available": False})
+
+        return jsonify(
+            {
+                "available": True,
+                "balance_before_minutes": preview.balance_before_minutes,
+                "balance_label": format_balance_minutes(
+                    preview.balance_before_minutes
+                ),
+                "day_offset": preview.suggested_end_day_offset,
+                "reason_label": earliest_reason_label(
+                    preview.required_minutes,
+                    settings.target_minutes_per_day,
+                ),
+                "required_label": format_minutes(preview.required_minutes),
+                "required_minutes": preview.required_minutes,
+                "suggested_end": (
+                    preview.suggested_end.strftime("%H:%M")
+                    if preview.suggested_end
+                    else None
+                ),
+                "suggested_end_label": format_suggested_end(
+                    preview.suggested_end,
+                    preview.suggested_end_day_offset,
+                ),
+            }
+        )
+
     @app.post("/settings")
     def update_settings():
         period = PeriodMode(request.form["period"])
@@ -61,7 +113,11 @@ def create_app(
         )
         store.save_entry(entry)
         flash("工时记录已保存", "success")
-        return _redirect_to_reference(work_date)
+        anchor = _entry_return_anchor(
+            request.form.get("return_target"),
+            work_date,
+        )
+        return _redirect_to_reference(work_date, anchor)
 
     @app.post("/clock-in")
     def clock_in():
@@ -173,6 +229,13 @@ def create_app(
     def reason_label_filter(value: str) -> str:
         return reason_label(value)
 
+    @app.template_filter("earliest_reason")
+    def earliest_reason_filter(
+        required_minutes: int | None,
+        target_minutes: int,
+    ) -> str:
+        return earliest_reason_label(required_minutes, target_minutes)
+
     @app.template_filter("override_label")
     def override_label_filter(value: DayOverride) -> str:
         return override_label(value)
@@ -195,6 +258,14 @@ def _build_dashboard(
     overrides = store.list_overrides(month_start, month_end)
     entries = store.list_entries(month_start, month_end)
     forecast = build_forecast(selected_date, entries, overrides, settings)
+    selected_entry = entries.get(selected_date)
+    selected_preview = _preview_day_forecast(
+        selected_date,
+        selected_entry.start if selected_entry else None,
+        entries,
+        overrides,
+        settings,
+    )
     enabled_interval_count = sum(
         interval.enabled for interval in settings.non_working_intervals
     )
@@ -209,7 +280,8 @@ def _build_dashboard(
         "enabled_interval_count": enabled_interval_count,
         "period_modes": list(PeriodMode),
         "override_kinds": list(DayOverride),
-        "selected_entry": entries.get(selected_date),
+        "selected_entry": selected_entry,
+        "selected_preview": selected_preview,
         "today_actual_minutes": _actual_for_today(forecast, selected_date),
         "period_progress": _period_progress(forecast),
     }
@@ -259,6 +331,32 @@ def format_balance_minutes(value: int | None) -> str:
     return format_signed_minutes(value)
 
 
+def format_suggested_end(value: time | None, day_offset: int | None) -> str:
+    if value is None:
+        return "-"
+    if day_offset == 1:
+        prefix = "次日 "
+    elif day_offset and day_offset > 1:
+        prefix = f"{day_offset}天后 "
+    else:
+        prefix = ""
+    return f"{prefix}{value.strftime('%H:%M')}"
+
+
+def earliest_reason_label(
+    required_minutes: int | None,
+    target_minutes: int,
+) -> str:
+    if required_minutes is None:
+        return ""
+    adjustment = target_minutes - required_minutes
+    if adjustment > 0:
+        return f"余额抵扣{format_minutes(adjustment)}"
+    if adjustment < 0:
+        return f"今日补足{format_minutes(abs(adjustment))}"
+    return f"标准{format_minutes(target_minutes)}"
+
+
 def mode_label(value: PeriodMode) -> str:
     return "周平均" if value == PeriodMode.WEEK else "月平均"
 
@@ -283,8 +381,45 @@ def _selected_date(default: date) -> date:
     return _parse_date(request.args.get("reference_date")) or default
 
 
-def _redirect_to_reference(reference_date: date):
-    return redirect(url_for("index", reference_date=reference_date.isoformat()))
+def _redirect_to_reference(reference_date: date, anchor: str | None = None):
+    return redirect(
+        url_for(
+            "index",
+            reference_date=reference_date.isoformat(),
+            _anchor=anchor,
+        )
+    )
+
+
+def _entry_return_anchor(value: str | None, work_date: date) -> str | None:
+    if value == "selected_entry":
+        return "selected-entry"
+    if value == "prediction":
+        return f"prediction-{work_date.isoformat()}"
+    return None
+
+
+def _preview_day_forecast(
+    work_date: date,
+    start: time | None,
+    entries: dict[date, WorkEntry],
+    overrides: dict[date, DayOverride],
+    settings: ForecastSettings,
+) -> DayForecast | None:
+    preview_entries = dict(entries)
+    preview_entries[work_date] = WorkEntry(
+        work_date=work_date,
+        start=start,
+        end=None,
+        lunch_minutes=90,
+    )
+    forecast = build_forecast(
+        reference_date=work_date,
+        entries=preview_entries,
+        overrides=overrides,
+        settings=settings,
+    )
+    return forecast.days.get(work_date)
 
 
 def _parse_required_date(value: str | None) -> date:

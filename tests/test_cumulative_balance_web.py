@@ -19,7 +19,7 @@ def app(tmp_path):
 
 def _table_row(body: str, work_date: str) -> str:
     match = re.search(
-        rf'<tr data-work-date="{re.escape(work_date)}">(.*?)</tr>',
+        rf'<tr[^>]*data-work-date="{re.escape(work_date)}"[^>]*>(.*?)</tr>',
         body,
         re.DOTALL,
     )
@@ -29,7 +29,7 @@ def _table_row(body: str, work_date: str) -> str:
 
 def _earliest_end_cell(row: str) -> str:
     match = re.search(
-        r'<td class="earliest-end-cell">(.*?)</td>',
+        r'<td[^>]*class="earliest-end-cell"[^>]*>(.*?)</td>',
         row,
         re.DOTALL,
     )
@@ -133,10 +133,21 @@ def test_table_replaces_suggested_end_with_monthly_balance(app):
     assert "当日 +30分钟" in july_6
 
 
-def test_incomplete_day_has_no_balance_value(app):
-    response = app.test_client().get("/?reference_date=2026-07-06")
+def test_incomplete_day_shows_carried_balance_and_actionable_status(app):
+    client = app.test_client()
+    client.post(
+        "/entries",
+        data={
+            "work_date": "2026-07-03",
+            "start_time": "08:00",
+            "end_time": "19:30",
+        },
+    )
+    response = client.get("/?reference_date=2026-07-06")
 
     row = _table_row(response.get_data(as_text=True), "2026-07-06")
     assert 'data-daily-balance-minutes=""' in row
     assert 'data-cumulative-balance-minutes=""' in row
-    assert '<span class="balance-empty">-</span>' in row
+    assert 'data-balance-before-minutes="60"' in row
+    assert "带入 +1小时" in row
+    assert "余额抵扣1小时" in row

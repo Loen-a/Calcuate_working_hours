@@ -18,14 +18,21 @@ SETTINGS = ForecastSettings(
 
 
 @pytest.mark.parametrize(
-    ("prior_end", "expected_earliest_end"),
     (
-        (time(19, 30), time(17, 30)),  # Prior balance +1h: work the 8h minimum.
-        (time(17, 30), time(19, 30)),  # Prior balance -1h: work 10h.
+        "prior_end",
+        "expected_balance_before",
+        "expected_required_minutes",
+        "expected_earliest_end",
+    ),
+    (
+        (time(19, 30), 60, 8 * 60, time(17, 30)),
+        (time(17, 30), -60, 10 * 60, time(19, 30)),
     ),
 )
 def test_prior_month_balance_directly_adjusts_current_day_earliest_end(
     prior_end: time,
+    expected_balance_before: int,
+    expected_required_minutes: int,
     expected_earliest_end: time,
 ):
     prior_day = date(2026, 7, 3)
@@ -40,7 +47,10 @@ def test_prior_month_balance_directly_adjusts_current_day_earliest_end(
         settings=ForecastSettings(period=PeriodMode.MONTH),
     )
 
-    assert forecast.days[current_day].suggested_end == expected_earliest_end
+    current = forecast.days[current_day]
+    assert current.balance_before_minutes == expected_balance_before
+    assert current.required_minutes == expected_required_minutes
+    assert current.suggested_end == expected_earliest_end
 
 
 def test_month_balance_accumulates_signed_daily_differences():
