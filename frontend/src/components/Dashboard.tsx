@@ -82,6 +82,8 @@ export default function Dashboard({ y, m, entries, hMap }: Props) {
     const monthDays = new Date(targetY, targetM, 0).getDate()
     let n = 0
     for (let d = targetD; d <= monthDays; d++) {
+      const e = entries[fmtDate(targetY, targetM, d)]
+      if (e?.leave) continue
       const hm = targetY === y ? hMap : undefined
       if (dayInfo(targetY, targetM, d, hm).type === 'work') n++
     }

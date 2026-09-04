@@ -219,6 +219,7 @@ export default function App() {
     for (let d = 1; d < t.getDate(); d++) {
       if (dayInfo(viewY, viewM, d, hMap).type === 'work') {
         const e = entries[fmtDate(viewY, viewM, d)]
+        if (e?.leave) continue // skip leave days
         if (!e || calcNet(e.in, e.out) == null) list.push(fmtDate(viewY, viewM, d))
       }
     }

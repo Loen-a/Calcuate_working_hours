@@ -27,6 +27,7 @@ export function useMonthStats(
     for (let d = 1; d <= days; d++) {
       const info = dayInfo(y, m, d, hMap)
       const e = entries[fmtDate(y, m, d)]
+      if (e?.leave) continue // leave day: skip entirely
       if (e && isEntryCounted(e.counts, info.type === 'work')) {
         const net = calcNet(e.in, e.out)
         if (net != null) {

@@ -33,6 +33,7 @@ def put_entry(
             payload.start_time,
             payload.end_time,
             payload.counts,
+            payload.leave,
         )
     return {"date": work_date, "entry": entry}
 

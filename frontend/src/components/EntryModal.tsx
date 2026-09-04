@@ -25,6 +25,7 @@ export default function EntryModal({
   const [i, setI] = useState(entry?.in ?? '')
   const [o, setO] = useState(entry?.out ?? '')
   const [counts, setCounts] = useState<boolean>(entry?.counts ?? !isRestDay)
+  const [leave, setLeave] = useState(entry?.leave ?? false)
   const [busyAction, setBusyAction] = useState<'save' | 'delete' | null>(null)
   const [actionError, setActionError] = useState('')
 
@@ -39,13 +40,15 @@ export default function EntryModal({
   const net = calcNet(i, o)
   const bothFilled = !!(i && o)
   const oneFilled = !!i !== !!o
-  const valid = bothFilled && net != null
+  const valid = leave || (bothFilled && net != null)
   const err =
-    bothFilled && net == null
-      ? '下班时间需晚于上班时间（跨天打卡不支持）'
-      : oneFilled
-        ? '请同时填写上、下班时间，或都留空'
-        : ''
+    leave
+      ? ''
+      : bothFilled && net == null
+        ? '下班时间需晚于上班时间（跨天打卡不支持）'
+        : oneFilled
+          ? '请同时填写上、下班时间，或都留空'
+          : ''
   const ot = net != null ? net - DAILY_TARGET : 0
   const displayNet = isRestDay ? floorTo30Min(net!) : net!
 
@@ -63,7 +66,10 @@ export default function EntryModal({
 
   const handleSave = () => {
     if (!valid || busyAction !== null || externalBusy) return
-    void runAction('save', () => onSave({ in: i, out: o, counts }))
+    void runAction(
+      'save',
+      () => onSave(leave ? { in: i || '00:00', out: o || '00:00', leave: true } : { in: i, out: o, counts }),
+    )
   }
 
   const handleDelete = () => {
@@ -89,15 +95,50 @@ export default function EntryModal({
           </span>
         </div>
 
-        <label className="block text-[13px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2">
-          上班 · In
-        </label>
-        <TimePicker value={i} onChange={setI} ariaLabel="上班 · In" />
+        {!leave && (
+          <>
+            <label className="block text-[13px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2">
+              上班 · In
+            </label>
+            <TimePicker value={i} onChange={setI} ariaLabel="上班 · In" />
 
-        <label className="block text-[13px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2 mt-6">
-          下班 · Out
-        </label>
-        <TimePicker value={o} onChange={setO} ariaLabel="下班 · Out" />
+            <label className="block text-[13px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2 mt-6">
+              下班 · Out
+            </label>
+            <TimePicker value={o} onChange={setO} ariaLabel="下班 · Out" />
+          </>
+        )}
+
+        {!isRestDay && (
+          <div className="mt-5 flex items-center gap-3 select-none">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={leave}
+              onClick={() => setLeave((l) => !l)}
+              className={`w-5 h-5 rounded-sm border flex items-center justify-center transition-colors ${
+                leave ? 'bg-ochre border-ochre' : 'bg-paper border-rule'
+              }`}
+            >
+              {leave && (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-paper"
+                  aria-hidden
+                >
+                  <path d="M2 6.5 L5 9 L10 3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+            <span className="text-[13px] text-ink">请假（全天）</span>
+            <span className="text-[12px] text-ink-soft">不计算工时、不参与盈余</span>
+          </div>
+        )}
 
         {isRestDay && (
           <div className="mt-5 flex items-center gap-3 select-none">

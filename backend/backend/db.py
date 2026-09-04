@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS work_entries (
     work_date  TEXT PRIMARY KEY,
     start_time TEXT NOT NULL,
     end_time   TEXT NOT NULL,
-    counts     INTEGER NULL CHECK (counts IN (0, 1) OR counts IS NULL)
+    counts     INTEGER NULL CHECK (counts IN (0, 1) OR counts IS NULL),
+    leave      INTEGER NULL CHECK (leave IN (0, 1) OR leave IS NULL)
 );
 CREATE TABLE IF NOT EXISTS preferences (
     id    INTEGER PRIMARY KEY CHECK (id = 1),
@@ -29,6 +30,7 @@ EXPECTED_COLUMNS = {
         ("start_time", "TEXT", 1, 0),
         ("end_time", "TEXT", 1, 0),
         ("counts", "INTEGER", 0, 0),
+        ("leave", "INTEGER", 0, 0),
     ),
     "preferences": (
         ("id", "INTEGER", 0, 1),
@@ -91,6 +93,13 @@ def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
                 f"version {SCHEMA_VERSION}"
             )
         conn.executescript(SCHEMA_SQL)
+        try:
+            conn.execute(
+                "ALTER TABLE work_entries ADD COLUMN leave INTEGER NULL "
+                "CHECK (leave IN (0, 1) OR leave IS NULL)"
+            )
+        except sqlite3.OperationalError:
+            pass  # column already exists
         _validate_schema(conn)
         conn.execute(
             "INSERT OR IGNORE INTO preferences (id, theme) VALUES (1, 'cool')"

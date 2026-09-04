@@ -63,6 +63,7 @@ export default function TrendChart({ y, m, entries, hMap }: Props) {
     let bal = 0
     for (let d = 1; d <= endDay; d++) {
       const e = entries[fmtDate(y, m, d)]
+      if (e?.leave) { pts.push({ day: d, balance: +bal.toFixed(2) }); continue }
       if (e) {
         const info = dayInfo(y, m, d, hMap)
         const isWorkday = info.type === 'work'

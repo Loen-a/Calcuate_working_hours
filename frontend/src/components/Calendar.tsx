@@ -111,7 +111,12 @@ export default function Calendar({ y, m, entries, hMap, onPick }: Props) {
                           {c.d}
                         </span>
                         <div className="flex gap-1 shrink-0">
-                          {info.isOffDay === true && (
+                          {e?.leave && (
+                            <span className="text-[12px] font-mono px-1.5 py-px rounded-sm bg-ochre/10 text-ochre leading-none">
+                              假
+                            </span>
+                          )}
+                          {!e?.leave && info.isOffDay === true && (
                             <span className="text-[12px] font-mono px-1.5 py-px rounded-sm bg-plum/10 text-plum leading-none">
                               休
                             </span>

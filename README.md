@@ -24,7 +24,8 @@
 - **走势图**（`TrendChart`）：当月累计盈余/缺口走势。
 - **时间录入弹框**（`EntryModal` + `TimePicker`）：自定义冷调时间选择器（取代系统蓝白丑下拉）；周末 / 法定假日有「计入工时」开关（默认关），开了作为补时长计入。
 - **补时长 30 分钟向下取整**（`floorTo30Min`）。
-- **漏打卡提醒**（`App`）：当月已过去的 workday 中未打卡的日期，ochre 提示条。
+- **请假（全天）**（`EntryModal` + 计算链路）：工作日弹框勾选后不录打卡，该天彻底踢出盈余/走势图/推荐下班/漏打卡提醒，avoid 9h 缺口。
+- **漏打卡提醒**（`App`）：当月已过去的 workday 中未打卡（含未请假）的日期，ochre 提示条。
 - **时长统一格式** `X小时Y分钟`（分钟为 0 省略，hours 0 时只留"X分钟"）。
 - **状态色**：盈余 navy / 缺口 plum / 加班 ochre / 周末 plum / 调休 navy / 无效 muted。
 - **主题切换**（`Header` 右上「冷色 / 青绿」）：主题由后端 API 持久化到 SQLite；前端仍通过 `data-theme` 与 CSS 变量切换，业务组件不需要感知配色实现。
@@ -47,6 +48,9 @@
 `counts === true` → 计入；`false` → 不计入；缺省时 workday 默认 `true`、rest day 默认 `false`。
 
 计入的 rest day：净工时 `floorTo30Min`（半小时向下），**直接加入** `done`，**不**经 9h 扣减（所以"盈亏"对补时长是 +net，不是 net − 9）。
+
+### 请假（全天）
+`leave === true` → 全天请假，不录打卡时间。该天**不贡献** `done`、`entered`、`workdayEntered`，走势图持平，推荐下班跳过，漏打卡提醒不包含——即完全从当月盈余计算中排除，避免请假日产生 9h 缺口。
 
 ### 盈余 / 缺口
 ```
@@ -161,7 +165,7 @@ poetry -C backend run uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
 ## 数据
 
-- SQLite 文件：`backend/data/workhours.db`。
+- SQLite 文件：`backend/data/workhours.db`。`work_entries` 表包含 `leave` 列（请假标记，可空，0/1）。
 - 打卡、主题和节假日缓存都通过 `/api/*` 读写；浏览器 `localStorage` 不是正式数据源，后端不可用时也不会回退到浏览器存储。
 - 顶栏 `导出` 下载 version 2 文件 `workhours-YYYY-MM-DD-HH-mm-ss.json`，可完整恢复 entries、主题和节假日缓存。
 - 顶栏 `导入` 支持 version 2 完整恢复；旧版 version 1 仅替换 entries，不修改当前主题和节假日缓存。

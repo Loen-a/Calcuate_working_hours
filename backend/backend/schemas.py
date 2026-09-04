@@ -10,6 +10,7 @@ class WorkEntryPayload(BaseModel):
     start_time: str = Field(alias="in", serialization_alias="in")
     end_time: str = Field(alias="out", serialization_alias="out")
     counts: bool | None = None
+    leave: bool = False
 
     @field_validator("start_time", "end_time")
     @classmethod
@@ -24,6 +25,8 @@ class WorkEntryPayload(BaseModel):
 
     @model_validator(mode="after")
     def validate_order(self) -> "WorkEntryPayload":
+        if self.leave:
+            return self
         start = datetime.strptime(self.start_time, "%H:%M")
         end = datetime.strptime(self.end_time, "%H:%M")
         if end <= start:
