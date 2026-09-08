@@ -64,6 +64,52 @@ def test_complete_round_trip_preserves_punches_leave_and_all_settings(tmp_path):
     assert destination.get_entry(date(2026, 9, 2)).end == time(6)
 
 
+def test_v3_classic_theme_round_trip_and_reopen_preserve_all_business_data(tmp_path):
+    database = tmp_path / "classic.sqlite3"
+    source = WorkHoursStore(database)
+    backup = complete_backup()
+    backup["settings"]["theme"] = "classic"
+    restore_backup(source, backup)
+
+    expected = copy.deepcopy(backup)
+    expected.pop("exportedAt")
+    assert snapshot(source) == expected
+    reopened = WorkHoursStore(database)
+    assert reopened.get_theme() == "classic"
+    assert snapshot(reopened) == expected
+
+    destination = WorkHoursStore(tmp_path / "classic-restored.sqlite3")
+    restore_backup(destination, json.loads(json.dumps(build_backup(reopened))))
+    assert snapshot(destination) == expected
+
+
+def test_v1_import_preserves_current_classic_theme_and_main_settings(tmp_path):
+    store = WorkHoursStore(tmp_path / "classic-legacy.sqlite3")
+    backup = complete_backup()
+    backup["settings"]["theme"] = "classic"
+    restore_backup(store, backup)
+    expected = snapshot(store)
+    expected.update(entries={}, leaveDays=[])
+
+    restore_backup(store, {
+        "version": 1, "exportedAt": "2026-09-08T00:00:00Z", "entries": {},
+    })
+
+    assert snapshot(store) == expected
+
+
+def test_v2_classic_theme_is_rejected_atomically(tmp_path):
+    store = WorkHoursStore(tmp_path / "unsupported-legacy-theme.sqlite3")
+    restore_backup(store, complete_backup())
+    before = snapshot(store)
+    with pytest.raises(InvalidBackup, match="theme"):
+        restore_backup(store, {
+            "version": 2, "exportedAt": "2026-09-08T00:00:00Z",
+            "entries": {}, "preferences": {"theme": "classic"}, "holidayCache": {},
+        })
+    assert snapshot(store) == before
+
+
 def test_empty_intervals_stay_empty_after_reopening_database(tmp_path):
     database = tmp_path / "restore.sqlite3"
     store = WorkHoursStore(database)
@@ -73,8 +119,8 @@ def test_empty_intervals_stay_empty_after_reopening_database(tmp_path):
     assert WorkHoursStore(database).list_non_working_intervals() == []
 
 
-@pytest.mark.parametrize("version", [1, 2])
-def test_legacy_import_replaces_punches_and_leave_but_preserves_main_settings(tmp_path, version):
+@pytest.mark.parametrize("version,theme", [(1, None), (2, "cool"), (2, "teal")])
+def test_legacy_import_replaces_punches_and_leave_but_preserves_main_settings(tmp_path, version, theme):
     store = WorkHoursStore(tmp_path / "legacy.sqlite3")
     restore_backup(store, complete_backup())
     before = snapshot(store)
@@ -88,7 +134,7 @@ def test_legacy_import_replaces_punches_and_leave_but_preserves_main_settings(tm
         },
     }
     if version == 2:
-        legacy.update(preferences={"theme": "cool"}, holidayCache={})
+        legacy.update(preferences={"theme": theme}, holidayCache={})
     result = restore_backup(store, legacy)
     after = snapshot(store)
     assert result == {"version": version, "entries": 2, "leaveDays": 2, "holidayYears": 0}
@@ -100,7 +146,7 @@ def test_legacy_import_replaces_punches_and_leave_but_preserves_main_settings(tm
     assert after["settings"]["period"] == "month"
     assert after["nonWorkingIntervals"] == before["nonWorkingIntervals"]
     assert after["calendarOverrides"] == before["calendarOverrides"]
-    assert after["settings"]["theme"] == ("cool" if version == 2 else "teal")
+    assert after["settings"]["theme"] == (theme if version == 2 else "teal")
     assert after["holidayCache"] == ({} if version == 2 else before["holidayCache"])
 
 

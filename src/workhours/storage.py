@@ -41,8 +41,8 @@ class WorkHoursStore:
         return self._get_setting("theme", "cool")
 
     def set_theme(self, theme: str) -> None:
-        if theme not in ("cool", "teal"):
-            raise ValueError("Theme must be cool or teal.")
+        if theme not in ("cool", "teal", "classic"):
+            raise ValueError("Theme must be cool, teal or classic.")
         self._set_setting("theme", theme)
 
     def save_entry(self, entry: WorkEntry) -> None:

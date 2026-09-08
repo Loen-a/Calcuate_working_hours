@@ -330,8 +330,9 @@ def _validate_backup(raw: object) -> dict:
         settings = _fields(value["preferences"], {"theme"}, "preferences")
 
     if version >= 2:
-        if settings["theme"] not in ("cool", "teal"):
-            raise InvalidBackup("theme 必须是 cool 或 teal。")
+        allowed_themes = ("cool", "teal", "classic") if version == 3 else ("cool", "teal")
+        if settings["theme"] not in allowed_themes:
+            raise InvalidBackup(f"theme 必须是 {'、'.join(allowed_themes)} 之一。")
         result["settings"] = dict(settings)
         result["holidayCache"] = _validate_holiday_cache(value["holidayCache"])
     return result

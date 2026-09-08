@@ -91,7 +91,7 @@ export default function EntryModal({ day, preview, externalBusy, onClose, onSave
           {day.entry ? <button disabled={busy} className="text-[13px] text-plum hover:underline disabled:opacity-40" onClick={() => void run('delete', onDelete)}>{action === 'delete' ? '删除中…' : '删除打卡'}</button> : <span />}
           <div className="flex gap-2 ml-auto">
             <button disabled={busy} className="px-3 py-2.5 text-[13px] text-ink-soft disabled:opacity-40" onClick={onClose}>取消</button>
-            <button disabled={busy || (!start && !end)} className="px-4 py-2.5 bg-ink text-paper text-[13px] rounded-sm disabled:opacity-30" onClick={() => void run('save', () => onSave({ start_time: start || null, end_time: end || null }))}>{action === 'save' ? '保存中…' : '保存打卡'}</button>
+            <button disabled={busy || (!start && !end)} className="workhours-primary-action px-4 py-2.5 bg-ink text-paper text-[13px] rounded-sm disabled:opacity-30" onClick={() => void run('save', () => onSave({ start_time: start || null, end_time: end || null }))}>{action === 'save' ? '保存中…' : '保存打卡'}</button>
           </div>
         </div>
         <div className="mt-6 pt-5 border-t border-rule">

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { DashboardData } from './lib/types'
 import * as api from './lib/api'
 import { fmtMinutes, shiftMonth } from './lib/format'
-import { useAppliedTheme } from './lib/useTheme'
+import { useAppliedTheme, useDesktopViewport } from './lib/useTheme'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import TrendChart from './components/TrendChart'
@@ -22,6 +22,7 @@ export default function App() {
   const [fatal, setFatal] = useState('')
   const generation = useRef(0)
   useAppliedTheme(data?.theme || null)
+  const desktop = useDesktopViewport()
 
   const applyDashboard = (next: DashboardData) => {
     setData(next)
@@ -95,15 +96,17 @@ export default function App() {
   </main>
   if (!data) return <div className="min-h-screen grid place-items-center">正在连接本地数据库…</div>
   const busy = busyKind !== null
+  const visibleTheme = !desktop && data.theme === 'classic' ? 'cool' : data.theme
+  const nextTheme = visibleTheme === 'cool' ? 'teal' : desktop && visibleTheme === 'teal' ? 'classic' : 'cool'
   const day = modalDate ? data.days.find(day => day.date === modalDate) : null
   const { holiday_status: holiday, forecast } = data
   const sourceLabel = holiday.source === 'fallback' ? '按星期规则计算' : holiday.source === 'cache' ? '本地缓存' : '已从 holiday-cn 获取'
   return (
     <div className="workhours-app min-h-screen">
-      <Header date={data.selected_date} theme={data.theme} busy={busy} importBusy={busyKind === 'import'}
+      <Header date={data.selected_date} theme={visibleTheme} desktop={desktop} busy={busy} importBusy={busyKind === 'import'}
         onPrev={() => void navigate(shiftMonth(data.selected_date, -1))} onNext={() => void navigate(shiftMonth(data.selected_date, 1))}
         onToday={() => void navigate(data.today)} onExport={api.downloadBackup} onImport={file => void handleImport(file)}
-        onThemeToggle={() => { void mutate('theme', () => api.putSettings({ theme: data.theme === 'cool' ? 'teal' : 'cool' })).catch(error => setError('主题保存失败：' + messageOf(error))) }} />
+        onThemeToggle={() => { void mutate('theme', () => api.putSettings({ theme: nextTheme })).catch(error => setError('主题保存失败：' + messageOf(error))) }} />
       <main className="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-12" aria-busy={busy}>
         {error && <p role="alert" className="mb-5 p-3 bg-plum/10 border border-plum/30 rounded-sm text-plum text-[13px]">{error}</p>}
         {notice && <p role="status" className="mb-5 p-3 bg-navy/10 border border-navy/30 rounded-sm text-navy text-[13px]">{notice}</p>}
@@ -113,8 +116,8 @@ export default function App() {
           </label>
           <div className="flex flex-wrap gap-2">
             <button disabled={busy} onClick={() => void navigate(data.selected_date, true)} className="border border-rule px-3 py-2 rounded-sm text-[13px] disabled:opacity-40">编辑所选日期</button>
-            <button disabled={busy} onClick={() => void handleClock('in')} className="bg-ink text-paper px-3 py-2 rounded-sm text-[13px] disabled:opacity-40">现在上班</button>
-            <button disabled={busy} onClick={() => void handleClock('out')} className="border border-ink px-3 py-2 rounded-sm text-[13px] disabled:opacity-40">现在下班</button>
+            <button disabled={busy} onClick={() => void handleClock('in')} className="workhours-primary-action bg-ink text-paper px-3 py-2 rounded-sm text-[13px] disabled:opacity-40">现在上班</button>
+            <button disabled={busy} onClick={() => void handleClock('out')} className="workhours-secondary-action border border-ink px-3 py-2 rounded-sm text-[13px] disabled:opacity-40">现在下班</button>
           </div>
         </div>
         <Dashboard data={data} />

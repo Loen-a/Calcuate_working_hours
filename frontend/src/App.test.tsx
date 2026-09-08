@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -31,6 +31,7 @@ const requests: { path: string; init?: RequestInit }[] = []
 let importError = ''
 let entryError = ''
 let dashboardError = ''
+let settingsError = ''
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
@@ -41,6 +42,7 @@ beforeEach(() => {
   importError = ''
   entryError = ''
   dashboardError = ''
+  settingsError = ''
   window.history.replaceState({}, '', `/?reference_date=${date}`)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   vi.spyOn(window, 'alert').mockImplementation(() => undefined)
@@ -51,6 +53,12 @@ beforeEach(() => {
       if (dashboardError) return json({ error: dashboardError }, 503)
       const selected = new URL(input, window.location.origin).searchParams.get('reference_date') || date
       return json({ ...dashboard, selected_date: selected })
+    }
+    if (path === '/api/settings' && init?.method === 'PUT') {
+      if (settingsError) return json({ error: settingsError }, 400)
+      const settings = JSON.parse(init.body as string)
+      if (settings.theme) dashboard.theme = settings.theme
+      return json({ ok: true })
     }
     if (path === '/preview/earliest-end') return json(dashboard.selected_preview)
     if (path === '/api/backup' && init?.method === 'POST') {
@@ -171,4 +179,71 @@ it('reports a failed holiday refresh with retained cache instead of claiming suc
   fireEvent.click(await screen.findByRole('button', { name: '刷新节假日' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('获取失败，继续使用缓存')
   expect(screen.queryByText('2026 年节假日已刷新')).not.toBeInTheDocument()
+})
+
+
+function mockDesktopViewport(initialDesktop: boolean) {
+  let desktop = initialDesktop
+  const listeners = new Set<() => void>()
+  vi.spyOn(window, 'matchMedia').mockImplementation(query => ({
+    get matches() { return query.includes('min-width') ? desktop : true },
+    media: query,
+    onchange: null,
+    addEventListener: (_event: string, callback: () => void) => { listeners.add(callback) },
+    removeEventListener: (_event: string, callback: () => void) => { listeners.delete(callback) },
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => true,
+  } as unknown as MediaQueryList))
+  return (next: boolean) => { desktop = next; listeners.forEach(listener => listener()) }
+}
+
+it('cycles the desktop theme through cool, teal and classic using persisted responses', async () => {
+  mockDesktopViewport(true)
+  dashboard.theme = 'cool'
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '冷色' }))
+  fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
+  fireEvent.click(await screen.findByRole('button', { name: '经典绿' }))
+  expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
+  expect(requests.filter(request => request.path === '/api/settings').map(request => JSON.parse(request.init!.body as string).theme))
+    .toEqual(['teal', 'classic', 'cool'])
+})
+
+it('displays classic theme as cool on mobile and restores classic after resize without writing settings', async () => {
+  const resize = mockDesktopViewport(false)
+  dashboard.theme = 'classic'
+  render(<App />)
+  expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
+  await act(async () => resize(true))
+  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  await act(async () => resize(false))
+  expect(screen.getByRole('button', { name: '冷色' })).toBeInTheDocument()
+  await act(async () => resize(true))
+  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  expect(dashboard.theme).toBe('classic')
+  expect(requests.some(request => request.path === '/api/settings')).toBe(false)
+})
+
+it('saves teal only when the mobile user clicks the cool fallback of classic theme', async () => {
+  mockDesktopViewport(false)
+  dashboard.theme = 'classic'
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '冷色' }))
+  expect(await screen.findByRole('button', { name: '青绿' })).toBeInTheDocument()
+  expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'teal' })
+  expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
+})
+
+it('keeps the previous theme visible when saving classic theme fails', async () => {
+  mockDesktopViewport(true)
+  settingsError = '主题保存失败，请重试'
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('主题保存失败，请重试')
+  expect(screen.getByRole('button', { name: '青绿' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
+  expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
+  expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'classic' })
 })

@@ -40,7 +40,7 @@ export default function Calendar({ selected, today, days, busy, onPick }: Props)
                   <div className="workhours-calendar-record min-h-10 mt-2 font-mono text-[11px] sm:text-[13px] tabular-nums leading-snug">
                     {day?.actual_minutes != null ? <>
                       <div className="workhours-calendar-hours text-ink">{fmtMinutes(day.actual_minutes)}</div>
-                      {day.daily_balance_minutes != null && <div className={`workhours-calendar-balance ${day.daily_balance_minutes < 0 ? 'text-plum' : 'text-ochre'}`}>{signedMinutes(day.daily_balance_minutes)}</div>}
+                      {day.daily_balance_minutes != null && <div data-balance-sign={day.daily_balance_minutes > 0 ? 'positive' : day.daily_balance_minutes < 0 ? 'negative' : 'zero'} className={`workhours-calendar-balance ${day.daily_balance_minutes < 0 ? 'text-plum' : 'text-ochre'}`}>{signedMinutes(day.daily_balance_minutes)}</div>}
                     </> : day?.leave && day.entry ? <span className="workhours-calendar-status text-ink-soft text-[10px]">打卡保留</span>
                       : day?.entry ? day.entry.start_time && day.entry.end_time
                         ? <span className="workhours-calendar-status text-ink-soft text-[10px]" title="已记录 · 不计工时">已记录</span>

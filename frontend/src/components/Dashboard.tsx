@@ -19,7 +19,7 @@ export default function Dashboard({ data }: { data: DashboardData }) {
   const balance = useCountUp(month.balance_minutes)
   return (
     <section aria-label="工时统计">
-      <div className="bg-surface border border-rule rounded-sm p-5 mb-3">
+      <div className="workhours-forecast-card bg-surface border border-rule rounded-sm p-5 mb-3">
         <div className="flex items-center justify-between mb-3 gap-3">
           <span className="workhours-section-title text-[13px] tracking-[0.16em] text-ink-soft font-mono">最早下班预测</span>
           <span className="workhours-meta text-[12px] text-ink-soft font-mono">{date}{date === data.today ? ' · 今天' : ''}</span>

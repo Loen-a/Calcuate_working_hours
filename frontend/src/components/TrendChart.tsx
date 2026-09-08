@@ -18,10 +18,10 @@ interface Point {
   balance: number
 }
 
-const NAVY = '#2A4A6B'
-const PLUM = '#7A3A4E'
-const SOFT = '#5E646C'
-const RULE = '#C5CACE'
+const NAVY = 'var(--chart-positive, #2A4A6B)'
+const PLUM = 'var(--chart-negative, #7A3A4E)'
+const SOFT = 'var(--chart-muted, #5E646C)'
+const RULE = 'var(--chart-rule, #C5CACE)'
 
 interface TipProps {
   active?: boolean

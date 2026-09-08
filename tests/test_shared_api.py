@@ -157,3 +157,25 @@ def test_settings_and_intervals_recompute_same_backend(app):
     assert client.post('/api/non-working-intervals', json=lunch).status_code == 200
     later = client.get('/api/dashboard').json
     assert later['month']['completed_minutes'] == first['month']['completed_minutes'] + 90
+
+
+def test_classic_theme_setting_changes_only_presentation_and_round_trips_backup(app):
+    client = app.test_client()
+    client.put('/api/entries/2026-07-06', json={'start_time': '08:00', 'end_time': '18:30'})
+    before = client.get('/api/dashboard').json
+    saved = client.put('/api/settings', json={'theme': 'classic'})
+    assert saved.status_code == 200
+    after = client.get('/api/dashboard').json
+    assert after['theme'] == 'classic'
+    for field in ('month', 'forecast', 'days', 'intervals', 'settings', 'selected_preview'):
+        assert after[field] == before[field]
+    exported = client.get('/api/backup')
+    assert exported.json['settings']['theme'] == 'classic'
+    client.put('/api/settings', json={'theme': 'cool'})
+    restored = client.post('/api/backup', data={'file': (BytesIO(exported.data), 'classic.json')})
+    assert restored.status_code == 200
+    assert client.get('/api/dashboard').json['theme'] == 'classic'
+    rejected = client.put('/api/settings', json={'period': 'month', 'theme': 'invalid'})
+    assert rejected.status_code == 400
+    assert client.get('/api/dashboard').json['theme'] == 'classic'
+    assert client.get('/api/dashboard').json['settings'] == before['settings']

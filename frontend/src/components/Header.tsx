@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import type { Theme } from '../lib/types'
 
 interface Props {
-  date: string; theme: Theme; busy: boolean; importBusy: boolean
+  date: string; theme: Theme; desktop: boolean; busy: boolean; importBusy: boolean
   onPrev: () => void; onNext: () => void; onToday: () => void
   onThemeToggle: () => void; onExport: () => void; onImport: (file: File) => void
 }
@@ -26,7 +26,7 @@ export default function Header(props: Props) {
         <div className="flex items-center justify-end flex-wrap gap-2 w-full">
           <button onClick={props.onExport} disabled={props.busy} className={buttonClass} title="导出打卡、设置、请假和日历的完整 JSON 备份">导出</button>
           <button onClick={() => fileInputRef.current?.click()} disabled={props.busy} className={buttonClass}>{props.importBusy ? '导入中…' : '导入'}</button>
-          <button onClick={props.onThemeToggle} disabled={props.busy} className={buttonClass} title="切换主题（青绿 / 冷色）">{props.theme === 'teal' ? '青绿' : '冷色'}</button>
+          <button onClick={props.onThemeToggle} disabled={props.busy} className={buttonClass} title={props.desktop ? '切换主题（冷色 / 青绿 / 经典绿）' : '切换主题（青绿 / 冷色）'}>{props.theme === 'classic' ? '经典绿' : props.theme === 'teal' ? '青绿' : '冷色'}</button>
           <a href={'/interface/old?reference_date=' + encodeURIComponent(props.date)} className={buttonClass} aria-disabled={props.busy} onClick={event => { if (props.busy) event.preventDefault() }}>切换旧界面</a>
           <input ref={fileInputRef} type="file" aria-label="选择 JSON 备份" disabled={props.busy} accept=".json,application/json" className="hidden" onChange={event => {
             const file = event.target.files?.[0]

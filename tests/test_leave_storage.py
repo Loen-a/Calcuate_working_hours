@@ -55,6 +55,18 @@ def test_theme_and_holiday_cache_survive_reopening(tmp_path):
     assert reopened.get_holiday_cache(2027) is None
 
 
+def test_classic_theme_survives_reopening_without_changing_work_records(tmp_path):
+    path = tmp_path / "classic.sqlite3"
+    store = WorkHoursStore(path)
+    day = date(2026, 9, 8)
+    entry = WorkEntry(day, time(8), None)
+    store.save_entry(entry)
+    store.set_theme("classic")
+    reopened = WorkHoursStore(path)
+    assert reopened.get_theme() == "classic"
+    assert reopened.get_entry(day) == entry
+
+
 def test_opening_original_schema_adds_tables_without_changing_existing_data(tmp_path):
     path = tmp_path / "old.sqlite3"
     with sqlite3.connect(path) as conn:

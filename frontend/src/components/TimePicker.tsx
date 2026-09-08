@@ -247,7 +247,7 @@ export default function TimePicker({ value, onChange, ariaLabel }: Props) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-4 py-2 bg-ink text-paper text-[13px] font-mono uppercase tracking-[0.14em] rounded-sm hover:bg-ink-soft transition-colors"
+                className="workhours-primary-action px-4 py-2 bg-ink text-paper text-[13px] font-mono uppercase tracking-[0.14em] rounded-sm hover:bg-ink-soft transition-colors"
               >
                 确定
               </button>
