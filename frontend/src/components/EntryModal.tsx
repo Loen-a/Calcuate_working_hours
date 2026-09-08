@@ -66,20 +66,20 @@ export default function EntryModal({ day, preview, externalBusy, onClose, onSave
   }
   return (
     <div className="fixed inset-0 bg-ink/30 flex items-center justify-center z-20 px-3 py-4" onClick={() => { if (!busy) onClose() }}>
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="entry-title" tabIndex={-1} className="bg-paper border border-rule rounded-sm p-5 sm:p-8 w-full max-w-[440px] max-h-[92dvh] overflow-y-auto shadow-sm outline-none" onClick={event => event.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="entry-title" tabIndex={-1} className="workhours-entry-modal bg-paper border border-rule rounded-sm p-5 sm:p-8 w-full max-w-[440px] max-h-[92dvh] overflow-y-auto shadow-sm outline-none" onClick={event => event.stopPropagation()}>
         <div className="flex items-baseline justify-between mb-5 gap-3">
-          <h3 id="entry-title" className="font-display text-[26px] tracking-tight">{day.date}</h3>
-          <span className="text-[12px] tracking-[0.2em] text-ink-soft font-mono">Entry</span>
+          <h3 id="entry-title" className="workhours-section-title font-display text-[26px] tracking-tight">{day.date}</h3>
+          <span className="workhours-meta text-[12px] tracking-[0.2em] text-ink-soft font-mono">Entry</span>
         </div>
-        <p className="text-[13px] text-ink-soft mb-4">{day.calendar_name}{day.leave ? ' · 当天不计入工时和目标，打卡记录保留' : ''}</p>
+        <p className="workhours-help text-[13px] text-ink-soft mb-4">{day.calendar_name}{day.leave ? ' · 当天不计入工时和目标，打卡记录保留' : ''}</p>
         <fieldset disabled={busy}>
-          <label className="block text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2">上班 · In</label>
+          <label className="workhours-label block text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2">上班 · In</label>
           <TimePicker value={start} onChange={setStart} ariaLabel="上班 · In" />
-          <label className="block text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2 mt-5">下班 · Out</label>
+          <label className="workhours-label block text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2 mt-5">下班 · Out</label>
           <TimePicker value={end} onChange={setEnd} ariaLabel="下班 · Out" />
         </fieldset>
-        <p className="text-[12px] text-ink-soft mt-3 leading-relaxed">可以仅填写上班时间；下班早于上班时按次日处理。</p>
-        <div className="mt-4 pt-4 border-t border-rule text-[13px] font-mono leading-relaxed" aria-live="polite">
+        <p className="workhours-help text-[12px] text-ink-soft mt-3 leading-relaxed">可以仅填写上班时间；下班早于上班时按次日处理。</p>
+        <div className="workhours-entry-preview mt-4 pt-4 border-t border-rule text-[13px] font-mono leading-relaxed" aria-live="polite">
           {previewBusy ? '正在计算最早下班时间…' : previewError ? <span className="text-plum">预测读取失败：{previewError}</span>
             : day.leave ? '全天请假，无下班预测'
               : livePreview.available ? <><span className="text-ink-soft">最早下班 </span><strong>{livePreview.suggested_end_label || livePreview.suggested_end}</strong><p className="text-ink-soft">需完成 {livePreview.required_label || fmtMinutes(livePreview.required_minutes || 0)} · {livePreview.reason_label}</p></>
@@ -96,11 +96,11 @@ export default function EntryModal({ day, preview, externalBusy, onClose, onSave
         </div>
         <div className="mt-6 pt-5 border-t border-rule">
           <div className="flex items-center justify-between gap-3">
-            <div><p className="text-[13px]">全天请假</p><p className="text-[12px] text-ink-soft mt-1">独立保存，保留打卡与日历标记</p></div>
+            <div><p className="workhours-label text-[13px]">全天请假</p><p className="workhours-help text-[12px] text-ink-soft mt-1">独立保存，保留打卡与日历标记</p></div>
             <button disabled={busy} onClick={() => void run('leave', () => onLeave(!day.leave))} className="px-3 py-2.5 border border-ochre/40 text-ochre text-[12px] rounded-sm disabled:opacity-40">{action === 'leave' ? '保存中…' : day.leave ? '取消全天请假' : '设为全天请假'}</button>
           </div>
           <div className="flex items-end gap-2 mt-5">
-            <label className="flex-1 min-w-0 text-[13px] text-ink-soft">手动日历标记
+            <label className="workhours-label flex-1 min-w-0 text-[13px] text-ink-soft">手动日历标记
               <select aria-label="手动日历标记" disabled={busy} value={calendar} onChange={event => setCalendar(event.target.value as CalendarKind | '')} className="mt-2 block w-full bg-surface border border-rule rounded-sm p-2 text-ink">
                 <option value="">自动日历</option><option value="holiday">休息日</option><option value="workday">工作日</option>
               </select>

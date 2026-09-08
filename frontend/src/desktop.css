@@ -1,0 +1,147 @@
+/* Desktop typography follows the original interface; smaller viewports keep their existing styles. */
+@media (min-width: 1024px) {
+  :root,
+  :root[data-theme='teal'] {
+    --font-sans: "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-display: "Segoe UI", "Microsoft YaHei", sans-serif;
+    --font-mono: "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .workhours-app button,
+  .workhours-app input,
+  .workhours-app select,
+  .workhours-action,
+  .workhours-body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-title {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-label,
+  .workhours-help {
+    font-size: 13px;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-meta {
+    font-size: 12px;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-month {
+    font-size: 19px;
+    line-height: 1.45;
+  }
+
+  .workhours-stat-value {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .workhours-forecast-time {
+    font-size: clamp(48px, 7vw, 76px);
+    font-weight: 760;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
+  }
+
+  .workhours-forecast-arrow {
+    font-size: 32px;
+    letter-spacing: normal;
+  }
+
+  .workhours-calendar th {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .workhours-calendar-date {
+    font-size: 20px;
+    line-height: 1.45;
+  }
+
+  .workhours-calendar-name,
+  .workhours-calendar-record {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .workhours-calendar-hours {
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .workhours-calendar-balance {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .workhours-calendar-badge,
+  .workhours-calendar-status {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .workhours-trend .recharts-cartesian-axis-tick-value {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    letter-spacing: normal;
+  }
+
+  .workhours-chart-tooltip {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .workhours-entry-preview {
+    font-size: 13px;
+    line-height: 1.45;
+    letter-spacing: normal;
+  }
+
+  .workhours-time-picker,
+  .workhours-time-popover {
+    font-family: var(--font-sans);
+  }
+
+  .workhours-time-preview {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
+  }
+
+  .workhours-interval-fields {
+    grid-template-columns: minmax(160px, 1fr) minmax(140px, 160px) minmax(140px, 160px) auto auto;
+  }
+
+  .workhours-interval-fields input {
+    min-width: 0;
+  }
+}

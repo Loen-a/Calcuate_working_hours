@@ -7,9 +7,9 @@ function Card({ label, value, sub, tone = 'ink' }: {
 }) {
   return (
     <div className="bg-surface border border-rule rounded-sm p-4 sm:p-5 min-w-0">
-      <div className="text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2.5">{label}</div>
-      <div className={`font-mono tabular-nums leading-tight text-[22px] sm:text-[24px] ${tone === 'navy' ? 'text-navy' : tone === 'plum' ? 'text-plum' : 'text-ink'}`}>{value}</div>
-      <div className="text-[12px] text-ink-soft mt-2.5 font-mono tabular-nums">{sub}</div>
+      <div className="workhours-label text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2.5">{label}</div>
+      <div className={`workhours-stat-value font-mono tabular-nums leading-tight text-[22px] sm:text-[24px] ${tone === 'navy' ? 'text-navy' : tone === 'plum' ? 'text-plum' : 'text-ink'}`}>{value}</div>
+      <div className="workhours-help text-[12px] text-ink-soft mt-2.5 font-mono tabular-nums">{sub}</div>
     </div>
   )
 }
@@ -21,17 +21,17 @@ export default function Dashboard({ data }: { data: DashboardData }) {
     <section aria-label="工时统计">
       <div className="bg-surface border border-rule rounded-sm p-5 mb-3">
         <div className="flex items-center justify-between mb-3 gap-3">
-          <span className="text-[13px] tracking-[0.16em] text-ink-soft font-mono">最早下班预测</span>
-          <span className="text-[12px] text-ink-soft font-mono">{date}{date === data.today ? ' · 今天' : ''}</span>
+          <span className="workhours-section-title text-[13px] tracking-[0.16em] text-ink-soft font-mono">最早下班预测</span>
+          <span className="workhours-meta text-[12px] text-ink-soft font-mono">{date}{date === data.today ? ' · 今天' : ''}</span>
         </div>
-        <div className="flex items-baseline flex-wrap gap-3 font-display font-medium tabular-nums leading-none text-[36px] sm:text-[44px]">
+        <div className="workhours-forecast-time flex items-baseline flex-wrap gap-3 font-display font-medium tabular-nums leading-none text-[36px] sm:text-[44px]">
           <span>{day?.entry?.start_time || '--:--'}</span>
-          <span className="text-ink-soft text-[24px]">→</span>
+          <span className="workhours-forecast-arrow text-ink-soft text-[24px]">→</span>
           <span className={preview.available ? 'text-ink' : 'text-ink-soft'}>
             {preview.available ? (preview.suggested_end_label || preview.suggested_end || '--:--') : '--:--'}
           </span>
         </div>
-        <p className="text-[12px] text-ink-soft mt-3 font-mono leading-relaxed">
+        <p className="workhours-help text-[12px] text-ink-soft mt-3 font-mono leading-relaxed">
           {preview.available
             ? `需完成 ${preview.required_label || fmtMinutes(preview.required_minutes || 0)} · ${preview.reason_label || ''}`
             : day?.leave ? '全天请假 · 已有打卡保留，当天不计入工时和目标' : preview.reason_label || '请选择工作日期并填写上班时间，查看下班预测'}

@@ -33,7 +33,7 @@ function Tip({ active, payload, label }: TipProps) {
   const v = payload[0].value
   const sign = v > 0 ? '+' : v < 0 ? '−' : ''
   return (
-    <div className="bg-paper border border-rule px-3.5 py-2.5 font-mono text-[14px] tabular-nums shadow-sm">
+    <div className="workhours-chart-tooltip bg-paper border border-rule px-3.5 py-2.5 font-mono text-[14px] tabular-nums shadow-sm">
       <div className="text-ink-soft">{label} 日</div>
       <div className={v >= 0 ? 'text-navy' : 'text-plum'}>
         {sign}
@@ -54,11 +54,11 @@ export default function TrendChart({ days }: Props) {
   const grad = last >= 0 ? 'g-navy' : 'g-plum'
 
   return (
-    <section>
+    <section className="workhours-trend">
       <div className="flex items-center gap-3 mb-5">
-        <span className="text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Trend</span>
+        <span className="workhours-label text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Trend</span>
         <span className="text-ink-soft/40 font-mono">·</span>
-        <span className="text-[13px] tracking-[0.2em] text-ink-soft font-mono">
+        <span className="workhours-section-title text-[13px] tracking-[0.2em] text-ink-soft font-mono">
           累计盈余 / 缺口
         </span>
       </div>

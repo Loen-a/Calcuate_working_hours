@@ -99,7 +99,7 @@ export default function App() {
   const { holiday_status: holiday, forecast } = data
   const sourceLabel = holiday.source === 'fallback' ? '按星期规则计算' : holiday.source === 'cache' ? '本地缓存' : '已从 holiday-cn 获取'
   return (
-    <div className="min-h-screen">
+    <div className="workhours-app min-h-screen">
       <Header date={data.selected_date} theme={data.theme} busy={busy} importBusy={busyKind === 'import'}
         onPrev={() => void navigate(shiftMonth(data.selected_date, -1))} onNext={() => void navigate(shiftMonth(data.selected_date, 1))}
         onToday={() => void navigate(data.today)} onExport={api.downloadBackup} onImport={file => void handleImport(file)}
@@ -108,7 +108,7 @@ export default function App() {
         {error && <p role="alert" className="mb-5 p-3 bg-plum/10 border border-plum/30 rounded-sm text-plum text-[13px]">{error}</p>}
         {notice && <p role="status" className="mb-5 p-3 bg-navy/10 border border-navy/30 rounded-sm text-navy text-[13px]">{notice}</p>}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <label className="text-[13px] text-ink-soft">查看日期
+          <label className="workhours-label text-[13px] text-ink-soft">查看日期
             <input type="date" aria-label="查看日期" value={data.selected_date} disabled={busy} className="ml-3 bg-surface border border-rule rounded-sm px-2 py-2 font-mono text-ink" onChange={event => { if (event.target.value) void navigate(event.target.value) }} />
           </label>
           <div className="flex flex-wrap gap-2">
@@ -118,7 +118,7 @@ export default function App() {
           </div>
         </div>
         <Dashboard data={data} />
-        <p className="mt-4 text-[12px] text-ink-soft font-mono leading-relaxed">
+        <p className="workhours-help mt-4 text-[12px] text-ink-soft font-mono leading-relaxed">
           当前{data.settings.period === 'week' ? '周' : '月'}周期 {forecast.period_start} — {forecast.period_end} · 目标 {fmtMinutes(forecast.target_minutes)} · 已完成 {fmtMinutes(forecast.completed_minutes)} · 待完成 {fmtMinutes(forecast.remaining_target_minutes)}
         </p>
         <div className="my-8 h-px bg-rule" />
@@ -126,13 +126,13 @@ export default function App() {
         <div className="mt-8 mb-4 h-px bg-rule" />
         <Calendar selected={data.selected_date} today={data.today} days={data.days} busy={busy} onPick={date => void navigate(date, true)} />
         {data.month.missing_history_days.length > 0 && <div className="mt-5 flex items-start gap-3 bg-ochre/10 border border-ochre/30 rounded-sm px-4 py-3">
-          <span className="text-ochre font-mono text-[12px] shrink-0">提醒</span>
-          <span className="text-[13px] font-mono">本月还有 {data.month.missing_history_days.length} 个工作日未完成打卡：
+          <span className="workhours-label text-ochre font-mono text-[12px] shrink-0">提醒</span>
+          <span className="workhours-body text-[13px] font-mono">本月还有 {data.month.missing_history_days.length} 个工作日未完成打卡：
             {data.month.missing_history_days.slice(0, 5).map(date => date.slice(5)).join('、')}{data.month.missing_history_days.length > 5 ? '…' : ''}</span>
         </div>}
         <Settings data={data} busy={busy} onPeriod={async period => { await mutate('settings', () => api.putSettings({ period })) }}
           onSave={async interval => { await mutate('interval', () => api.saveInterval(interval)) }} onDelete={async id => { await mutate('interval', () => api.deleteInterval(id)) }} />
-        <div className="mt-6 text-center text-[12px] text-ink-soft font-mono leading-relaxed">
+        <div className="workhours-help mt-6 text-center text-[12px] text-ink-soft font-mono leading-relaxed">
           <p>{holiday.year} 年节假日 · {sourceLabel} · 数据保存在本地数据库</p>
           {holiday.warning && <p className="text-ochre mt-1">{holiday.warning}</p>}
           <button disabled={busy} onClick={() => void handleRefresh()} className="mt-3 border border-rule px-4 py-2 rounded-full hover:border-ink-soft disabled:opacity-40">{busyKind === 'holidays' ? '刷新中…' : '刷新节假日'}</button>

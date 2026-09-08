@@ -30,7 +30,7 @@ const Column = forwardRef<HTMLDivElement, ColumnProps>(function Column(
 ) {
   return (
     <div className="flex-1 min-w-0">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-ink-soft font-mono text-center mb-1.5">
+      <div className="workhours-label text-[11px] uppercase tracking-[0.14em] text-ink-soft font-mono text-center mb-1.5">
         {label}
       </div>
       <div
@@ -63,7 +63,7 @@ const Column = forwardRef<HTMLDivElement, ColumnProps>(function Column(
                   onSelect((n + 1) % items.length)
                 }
               }}
-              className={`w-full h-9 grid place-items-center font-mono text-[15px] tabular-nums rounded-sm transition-colors ${
+              className={`workhours-time-option w-full h-9 grid place-items-center font-mono text-[15px] tabular-nums rounded-sm transition-colors ${
                 isSel
                   ? 'bg-navy text-paper'
                   : 'text-ink-soft hover:bg-rule/50 hover:text-ink'
@@ -183,12 +183,12 @@ export default function TimePicker({ value, onChange, ariaLabel }: Props) {
   const display = cur ? `${pad(cur.h)}:${pad(cur.m)}` : '--:--'
 
   return (
-    <div className="relative" ref={wrapRef}>
+    <div className="workhours-time-picker relative" ref={wrapRef}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={ariaLabel}
-        className="w-full p-3 border border-rule rounded-sm font-mono text-[17px] tabular-nums text-left bg-paper hover:border-ink-soft focus:outline-none focus:border-ink transition-colors flex items-center justify-between"
+        className="workhours-time-input w-full p-3 border border-rule rounded-sm font-mono text-[17px] tabular-nums text-left bg-paper hover:border-ink-soft focus:outline-none focus:border-ink transition-colors flex items-center justify-between"
       >
         <span className={cur ? 'text-ink' : 'text-ink-soft'}>{display}</span>
         <svg
@@ -209,13 +209,13 @@ export default function TimePicker({ value, onChange, ariaLabel }: Props) {
 
       {open && (
         <div
-          className="absolute top-full left-0 mt-2 z-30 bg-paper border border-rule rounded-sm p-4 w-[270px] shadow-lg"
+          className="workhours-time-popover absolute top-full left-0 mt-2 z-30 bg-paper border border-rule rounded-sm p-4 w-[270px] shadow-lg"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-[12px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2 text-center">
+          <div className="workhours-label text-[12px] uppercase tracking-[0.16em] text-ink-soft font-mono mb-2 text-center">
             {ariaLabel}
           </div>
-          <div className="text-center font-mono tabular-nums text-[32px] text-ink leading-none mb-4">
+          <div className="workhours-time-preview text-center font-mono tabular-nums text-[32px] text-ink leading-none mb-4">
             {pad(h)}
             <span className="text-ink-soft mx-1.5">:</span>
             {pad(m)}
