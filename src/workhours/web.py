@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Callable
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, current_app, flash, jsonify, make_response, redirect, render_template, request, send_file, url_for
 
 from workhours.domain import (
     DayForecast,
@@ -18,6 +19,7 @@ from workhours.domain import (
     period_bounds,
 )
 from workhours.storage import WorkHoursStore, default_database_path
+from workhours.holidays import HolidayResult, get_holidays
 
 
 TodayProvider = Callable[[], date]
@@ -31,6 +33,8 @@ def create_app(
 ) -> Flask:
     app = Flask(__name__)
     app.secret_key = "local-workhours-dev"
+    app.config.update(DEFAULT_INTERFACE="new", HOLIDAY_NETWORK_ENABLED=True,
+                      MAX_CONTENT_LENGTH=16 * 1024 * 1024)
 
     today_provider = today_provider or date.today
     now_provider = now_provider or datetime.now
@@ -39,10 +43,32 @@ def create_app(
 
     @app.get("/")
     def index():
-        today = today_provider()
-        selected_date = _selected_date(today)
-        dashboard = _build_dashboard(store, today, selected_date)
-        return render_template("index.html", **dashboard)
+        explicit_interface = request.args.get("ui")
+        interface = explicit_interface or request.cookies.get("workhours_ui") or app.config["DEFAULT_INTERFACE"]
+        if interface == "new":
+            modern = Path(app.static_folder) / "modern" / "index.html"
+            if not modern.is_file():
+                return '新界面资源尚未准备好。<a href="/?ui=old">打开旧界面</a>', 503
+            response = send_file(modern, max_age=0)
+        else:
+            today = today_provider()
+            selected_date = _selected_date(today)
+            dashboard = _build_dashboard(store, today, selected_date)
+            response = make_response(render_template("index.html", **dashboard))
+        if explicit_interface in {"old", "new"}:
+            response.set_cookie("workhours_ui", explicit_interface, max_age=365 * 24 * 60 * 60,
+                                httponly=True, samesite="Lax")
+        return response
+
+    @app.get("/interface/<interface>")
+    def switch_interface(interface):
+        if interface not in {"new", "old"}:
+            return "未知界面", 404
+        selected_date = _selected_date(today_provider())
+        response = _redirect_to_reference(selected_date)
+        response.set_cookie("workhours_ui", interface, max_age=365 * 24 * 60 * 60,
+                            httponly=True, samesite="Lax")
+        return response
 
     @app.get("/preview/earliest-end")
     def preview_earliest_end():
@@ -56,7 +82,7 @@ def create_app(
 
         settings = store.get_settings()
         month_start, month_end = period_bounds(work_date, PeriodMode.MONTH)
-        overrides = store.list_overrides(month_start, month_end)
+        overrides, _ = _effective_calendar(store, month_start, month_end)
         entries = store.list_entries(month_start, month_end)
         preview = _preview_day_forecast(
             work_date,
@@ -64,35 +90,24 @@ def create_app(
             entries,
             overrides,
             settings,
+            store.list_leave_days(month_start, month_end),
         )
-        if preview is None or preview.required_minutes is None:
-            return jsonify({"available": False})
+        return jsonify(_preview_payload(preview, settings))
 
-        return jsonify(
-            {
-                "available": True,
-                "balance_before_minutes": preview.balance_before_minutes,
-                "balance_label": format_balance_minutes(
-                    preview.balance_before_minutes
-                ),
-                "day_offset": preview.suggested_end_day_offset,
-                "reason_label": earliest_reason_label(
-                    preview.required_minutes,
-                    settings.target_minutes_per_day,
-                ),
-                "required_label": format_minutes(preview.required_minutes),
-                "required_minutes": preview.required_minutes,
-                "suggested_end": (
-                    preview.suggested_end.strftime("%H:%M")
-                    if preview.suggested_end
-                    else None
-                ),
-                "suggested_end_label": format_suggested_end(
-                    preview.suggested_end,
-                    preview.suggested_end_day_offset,
-                ),
-            }
-        )
+    @app.post("/leaves")
+    def save_leave():
+        work_date = _parse_required_date(request.form.get("work_date"))
+        enabled = request.form.get("enabled") == "1"
+        store.set_leave(work_date, enabled)
+        flash("已标记全天请假，原打卡记录已保留" if enabled else "已取消请假，工时已重新计算", "success")
+        return _redirect_to_reference(work_date)
+
+    @app.post("/holidays/refresh")
+    def refresh_holidays():
+        selected_date = _parse_date(request.form.get("reference_date")) or today_provider()
+        result = _holiday_result(store, selected_date.year, refresh=True)
+        flash(result.warning or "节假日已刷新，工时已重新计算", "error" if result.warning else "success")
+        return _redirect_to_reference(selected_date)
 
     @app.post("/settings")
     def update_settings():
@@ -122,31 +137,14 @@ def create_app(
     @app.post("/clock-in")
     def clock_in():
         now = now_provider()
-        existing = store.get_entry(now.date())
-        store.save_entry(
-            WorkEntry(
-                work_date=now.date(),
-                start=now.time().replace(second=0, microsecond=0),
-                end=existing.end if existing else None,
-                lunch_minutes=90,
-            )
-        )
+        _record_clock(store, now, start=True)
         flash("已记录上班时间", "success")
         return _redirect_to_reference(now.date())
 
     @app.post("/clock-out")
     def clock_out():
         now = now_provider()
-        existing = store.get_entry(now.date())
-        start = existing.start if existing else None
-        store.save_entry(
-            WorkEntry(
-                work_date=now.date(),
-                start=start,
-                end=now.time().replace(second=0, microsecond=0),
-                lunch_minutes=90,
-            )
-        )
+        _record_clock(store, now, start=False)
         flash("已记录下班时间", "success")
         return _redirect_to_reference(now.date())
 
@@ -240,6 +238,8 @@ def create_app(
     def override_label_filter(value: DayOverride) -> str:
         return override_label(value)
 
+    from workhours.api import register_api
+    register_api(app, store, today_provider, now_provider)
     return app
 
 
@@ -255,9 +255,13 @@ def _build_dashboard(
 ) -> dict[str, object]:
     settings = store.get_settings()
     month_start, month_end = period_bounds(selected_date, PeriodMode.MONTH)
-    overrides = store.list_overrides(month_start, month_end)
+    overrides, holiday_status = _effective_calendar(store, month_start, month_end)
+    manual_overrides = store.list_overrides(month_start, month_end)
+    leave_days = store.list_leave_days(month_start, month_end)
     entries = store.list_entries(month_start, month_end)
-    forecast = build_forecast(selected_date, entries, overrides, settings)
+    forecast = build_forecast(selected_date, entries, overrides, settings, leave_days=leave_days)
+    month_forecast = build_forecast(selected_date, entries, overrides,
+                                    replace(settings, period=PeriodMode.MONTH), leave_days=leave_days)
     selected_entry = entries.get(selected_date)
     selected_preview = _preview_day_forecast(
         selected_date,
@@ -265,6 +269,7 @@ def _build_dashboard(
         entries,
         overrides,
         settings,
+        leave_days,
     )
     enabled_interval_count = sum(
         interval.enabled for interval in settings.non_working_intervals
@@ -275,7 +280,14 @@ def _build_dashboard(
         "settings": settings,
         "forecast": forecast,
         "entries": entries,
-        "overrides": overrides,
+        "overrides": manual_overrides,
+        "effective_overrides": overrides,
+        "leave_days": leave_days,
+        "selected_leave": selected_date in leave_days,
+        "holiday_status": holiday_status,
+        "month_forecast": month_forecast,
+        "month_start": month_start,
+        "month_end": month_end,
         "non_working_intervals": settings.non_working_intervals,
         "enabled_interval_count": enabled_interval_count,
         "period_modes": list(PeriodMode),
@@ -405,6 +417,7 @@ def _preview_day_forecast(
     entries: dict[date, WorkEntry],
     overrides: dict[date, DayOverride],
     settings: ForecastSettings,
+    leave_days: set[date] | None = None,
 ) -> DayForecast | None:
     preview_entries = dict(entries)
     preview_entries[work_date] = WorkEntry(
@@ -418,8 +431,51 @@ def _preview_day_forecast(
         entries=preview_entries,
         overrides=overrides,
         settings=settings,
+        leave_days=leave_days,
     )
     return forecast.days.get(work_date)
+
+
+def _record_clock(store: WorkHoursStore, now: datetime, *, start: bool) -> None:
+    existing = store.get_entry(now.date()) or WorkEntry(now.date())
+    current_time = now.time().replace(second=0, microsecond=0)
+    store.save_entry(replace(existing, **({"start": current_time} if start else {"end": current_time})))
+
+
+def _holiday_result(store: WorkHoursStore, year: int, *, refresh: bool = False) -> HolidayResult:
+    if not 2000 <= year <= 2100:
+        return HolidayResult(year, {}, "fallback", "该年份超出节假日数据范围，已按星期与手动标记计算")
+    return get_holidays(store, year, refresh=refresh,
+                        allow_network=current_app.config["HOLIDAY_NETWORK_ENABLED"],
+                        fetcher=current_app.config.get("HOLIDAY_FETCHER"))
+
+
+def _effective_calendar(store: WorkHoursStore, start: date, end: date):
+    result = _holiday_result(store, start.year)
+    overrides = {
+        date.fromisoformat(f"{start.year}-{month_day}"): (
+            DayOverride.HOLIDAY if info["isOffDay"] else DayOverride.WORKDAY
+        ) for month_day, info in result.holidays.items()
+        if start <= date.fromisoformat(f"{start.year}-{month_day}") <= end
+    }
+    overrides.update(store.list_overrides(start, end))
+    return overrides, result
+
+
+def _preview_payload(preview: DayForecast | None, settings: ForecastSettings):
+    if preview is None or preview.required_minutes is None:
+        return {"available": False}
+    return {
+        "available": True,
+        "balance_before_minutes": preview.balance_before_minutes,
+        "balance_label": format_balance_minutes(preview.balance_before_minutes),
+        "day_offset": preview.suggested_end_day_offset,
+        "reason_label": earliest_reason_label(preview.required_minutes, settings.target_minutes_per_day),
+        "required_label": format_minutes(preview.required_minutes),
+        "required_minutes": preview.required_minutes,
+        "suggested_end": preview.suggested_end.strftime("%H:%M") if preview.suggested_end else None,
+        "suggested_end_label": format_suggested_end(preview.suggested_end, preview.suggested_end_day_offset),
+    }
 
 
 def _parse_required_date(value: str | None) -> date:

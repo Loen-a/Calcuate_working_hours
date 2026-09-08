@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from collections.abc import Iterator
@@ -36,6 +37,14 @@ class WorkHoursStore:
     def set_period(self, period: PeriodMode) -> None:
         self._set_setting("period", period.value)
 
+    def get_theme(self) -> str:
+        return self._get_setting("theme", "cool")
+
+    def set_theme(self, theme: str) -> None:
+        if theme not in ("cool", "teal"):
+            raise ValueError("Theme must be cool or teal.")
+        self._set_setting("theme", theme)
+
     def save_entry(self, entry: WorkEntry) -> None:
         with self._connect() as connection:
             connection.execute(
@@ -67,6 +76,13 @@ class WorkHoursStore:
             ).fetchone()
 
         return _entry_from_row(row) if row else None
+
+    def delete_entry(self, work_date: date) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM entries WHERE work_date = ?",
+                (work_date.isoformat(),),
+            )
 
     def list_entries(self, start: date, end: date) -> dict[date, WorkEntry]:
         with self._connect() as connection:
@@ -117,6 +133,57 @@ class WorkHoursStore:
             date.fromisoformat(row["work_date"]): DayOverride(row["kind"])
             for row in rows
         }
+
+    def set_leave(self, work_date: date, enabled: bool) -> None:
+        with self._connect() as connection:
+            if enabled:
+                connection.execute(
+                    "INSERT OR IGNORE INTO leave_days (work_date) VALUES (?)",
+                    (work_date.isoformat(),),
+                )
+            else:
+                connection.execute(
+                    "DELETE FROM leave_days WHERE work_date = ?",
+                    (work_date.isoformat(),),
+                )
+
+    def list_leave_days(self, start: date, end: date) -> set[date]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT work_date FROM leave_days WHERE work_date BETWEEN ? AND ?",
+                (start.isoformat(), end.isoformat()),
+            ).fetchall()
+        return {date.fromisoformat(row["work_date"]) for row in rows}
+
+    def get_holiday_cache(
+        self, year: int
+    ) -> tuple[dict[str, dict[str, str | bool]], str] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json, fetched_at FROM holiday_cache WHERE year = ?",
+                (year,),
+            ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row["payload_json"]), row["fetched_at"]
+
+    def set_holiday_cache(
+        self,
+        year: int,
+        holidays: dict[str, dict[str, str | bool]],
+        fetched_at: str,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO holiday_cache (year, payload_json, fetched_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(year) DO UPDATE SET
+                    payload_json = excluded.payload_json,
+                    fetched_at = excluded.fetched_at
+                """,
+                (year, json.dumps(holidays, ensure_ascii=False), fetched_at),
+            )
 
     def list_non_working_intervals(self) -> list[NonWorkingInterval]:
         with self._connect() as connection:
@@ -231,6 +298,16 @@ class WorkHoursStore:
                 CREATE TABLE IF NOT EXISTS calendar_overrides (
                     work_date TEXT PRIMARY KEY,
                     kind TEXT NOT NULL CHECK (kind IN ('holiday', 'workday'))
+                );
+
+                CREATE TABLE IF NOT EXISTS leave_days (
+                    work_date TEXT PRIMARY KEY
+                );
+
+                CREATE TABLE IF NOT EXISTS holiday_cache (
+                    year INTEGER PRIMARY KEY,
+                    payload_json TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS non_working_intervals (

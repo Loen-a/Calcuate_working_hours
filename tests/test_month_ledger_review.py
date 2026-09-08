@@ -9,7 +9,7 @@ def test_summary_calls_remaining_target_a_ledger_gap(tmp_path):
         database_path=tmp_path / "workhours.sqlite3",
         today_provider=lambda: date(2026, 7, 13),
     )
-    app.config.update(TESTING=True)
+    app.config.update(TESTING=True, DEFAULT_INTERFACE="old", HOLIDAY_NETWORK_ENABLED=False)
 
     response = app.test_client().get("/?reference_date=2026-07-13")
 

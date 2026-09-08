@@ -12,7 +12,7 @@ def app(tmp_path):
         today_provider=lambda: date(2026, 7, 13),
         now_provider=lambda: datetime(2026, 7, 13, 9, 30),
     )
-    application.config.update(TESTING=True)
+    application.config.update(TESTING=True, DEFAULT_INTERFACE="old", HOLIDAY_NETWORK_ENABLED=False)
     return application
 
 

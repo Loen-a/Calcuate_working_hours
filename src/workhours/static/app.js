@@ -35,8 +35,11 @@
   }
 
   function setSelectedUnavailable() {
-    selectedElements.status.textContent = "非工作日";
-    selectedElements.copy.textContent = "当前日期不是工作日；可在高级设置中添加调休上班标记。";
+    const leave = focus.dataset.selectedLeave === "1";
+    selectedElements.status.textContent = leave ? "全天请假" : "非工作日";
+    selectedElements.copy.textContent = leave
+      ? "当天不计入目标、工时或余额；原打卡记录保留，取消请假后重新计算。"
+      : "当前日期不是工作日；可在高级设置中添加调休上班标记。";
     selectedElements.balance.textContent = "-";
     selectedElements.required.textContent = "-";
     selectedElements.reason.textContent = "-";
@@ -58,6 +61,11 @@
 
     const selectedScope = input.dataset.previewScope === "selected";
     const startTime = input.value;
+    if (selectedScope && focus.dataset.selectedLeave === "1") {
+      target.textContent = "--:--";
+      setSelectedUnavailable();
+      return;
+    }
     if (!startTime) {
       target.textContent = selectedScope ? "--:--" : "-";
       if (selectedScope) {

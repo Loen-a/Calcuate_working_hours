@@ -119,12 +119,14 @@ def period_workdays(
     reference_date: date,
     period: PeriodMode,
     overrides: dict[date, DayOverride],
+    leave_days: Iterable[date] | None = None,
 ) -> list[date]:
     start, end = period_bounds(reference_date, period)
+    excluded = set(leave_days or ())
     days: list[date] = []
     current = start
     while current <= end:
-        if is_workday(current, overrides):
+        if current not in excluded and is_workday(current, overrides):
             days.append(current)
         current += timedelta(days=1)
     return days
@@ -166,8 +168,11 @@ def build_forecast(
     entries: dict[date, WorkEntry],
     overrides: dict[date, DayOverride],
     settings: ForecastSettings,
+    leave_days: Iterable[date] | None = None,
 ) -> Forecast:
-    month_workdays = period_workdays(reference_date, PeriodMode.MONTH, overrides)
+    month_workdays = period_workdays(
+        reference_date, PeriodMode.MONTH, overrides, leave_days
+    )
     period_start, period_end = period_bounds(reference_date, settings.period)
     workdays = [
         day for day in month_workdays if period_start <= day <= period_end

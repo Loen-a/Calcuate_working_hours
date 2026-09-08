@@ -16,6 +16,7 @@ workhours-web = "workhours.web:main"
 
 [tool.poetry]
 packages = [{ include = "workhours", from = "src" }]
+include = [{ path = "src/workhours/static/modern/**", format = ["sdist", "wheel"] }]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

@@ -6,3 +6,8 @@ server.out.log
 server.err.log
 .venv/
 .vscode/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+dist/
+output/acceptance/

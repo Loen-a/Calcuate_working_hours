@@ -7,6 +7,7 @@
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='shared.js') }}" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -20,9 +21,25 @@
       <form class="quick-actions" method="post" action="{{ url_for('clock_out') }}">
         <button type="submit">下班</button>
       </form>
+      <a class="interface-link" href="{{ url_for('switch_interface', interface='new', reference_date=selected_date.isoformat()) }}">切换新界面</a>
     </header>
 
     <main class="layout">
+      <section class="shared-tools" aria-label="数据与节假日">
+        <a class="interface-link" href="{{ url_for('export_backup') }}">导出备份</a>
+        <form id="legacy-import-form" action="{{ url_for('import_backup') }}" method="post" enctype="multipart/form-data">
+          <label for="backup-file">JSON 备份</label>
+          <input id="backup-file" type="file" name="file" accept=".json,application/json" required>
+          <button type="submit">导入备份</button>
+        </form>
+        <form method="post" action="{{ url_for('refresh_holidays') }}">
+          <input type="hidden" name="reference_date" value="{{ selected_date.isoformat() }}">
+          <button type="submit">刷新节假日</button>
+        </form>
+        <p class="holiday-note">{{ selected_date.year }} 年节假日：{% if holiday_status.source == 'remote' %}已获取{% elif holiday_status.source == 'cache' %}本地缓存{% else %}按星期与手动标记计算{% endif %}。手动标记优先；请假日不参与统计。</p>
+        {% if holiday_status.warning %}<p class="status warning">{{ holiday_status.warning }}</p>{% endif %}
+        <p id="backup-status" role="status" aria-live="polite"></p>
+      </section>
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-list" aria-live="polite">
@@ -43,6 +60,7 @@
         class="forecast-focus"
         id="selected-forecast"
         data-selected-date="{{ selected_date.isoformat() }}"
+        data-selected-leave="{{ '1' if selected_leave else '0' }}"
         data-preview-url="{{ url_for('preview_earliest_end') }}"
       >
         <div class="forecast-spotlight">
@@ -56,7 +74,9 @@
               {% endif %}
             </strong>
             <span id="selected-preview-status" class="forecast-state">
-              {% if selected_preview is none %}
+              {% if selected_leave %}
+                全天请假
+              {% elif selected_preview is none %}
                 非工作日
               {% elif selected_entry and selected_entry.start %}
                 已按当前记录计算
@@ -66,7 +86,9 @@
             </span>
           </div>
           <p id="selected-preview-copy" class="forecast-copy">
-            {% if selected_preview is none %}
+            {% if selected_leave %}
+              当天不计入目标、工时或余额；原打卡记录保留，取消请假后重新计算。
+            {% elif selected_preview is none %}
               当前日期不是工作日；可在高级设置中添加调休上班标记。
             {% elif selected_entry and selected_entry.start %}
               已计入启用的非工作时间；修改右侧上班时间可即时预览。
@@ -122,6 +144,12 @@
             </label>
           </div>
           <button type="submit">保存当前记录</button>
+        </form>
+        <form class="leave-control" method="post" action="{{ url_for('save_leave') }}">
+          <input type="hidden" name="work_date" value="{{ selected_date.isoformat() }}">
+          <input type="hidden" name="enabled" value="{{ '0' if selected_leave else '1' }}">
+          <button type="submit">{{ '取消全天请假' if selected_leave else '标记全天请假' }}</button>
+          <span>保留打卡记录；请假期间不参与计算。</span>
         </form>
       </section>
 
@@ -323,6 +351,22 @@
           </section>
         </div>
       </details>
+
+      {% if leave_days %}
+      <section class="table-section">
+        <div class="section-head"><h2>本月全天请假</h2><span>{{ leave_days|length }} 天</span></div>
+        <div class="override-list">
+          {% for work_date in leave_days|sort %}
+          <form class="override-row" method="post" action="{{ url_for('save_leave') }}">
+            <input type="hidden" name="work_date" value="{{ work_date.isoformat() }}">
+            <input type="hidden" name="enabled" value="0">
+            <a href="{{ url_for('index', reference_date=work_date.isoformat()) }}">{{ work_date.isoformat() }}</a>
+            <strong>全天请假</strong><button type="submit">取消请假</button>
+          </form>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
 
       <section class="table-section">
         <div class="section-head prediction-head">

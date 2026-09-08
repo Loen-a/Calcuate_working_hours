@@ -42,7 +42,7 @@ def test_web_marks_overnight_earliest_end_as_next_day(tmp_path):
         today_provider=lambda: date(2026, 7, 6),
         now_provider=lambda: datetime(2026, 7, 6, 23),
     )
-    app.config.update(TESTING=True)
+    app.config.update(TESTING=True, DEFAULT_INTERFACE="old", HOLIDAY_NETWORK_ENABLED=False)
 
     response = app.test_client().post(
         "/entries",
