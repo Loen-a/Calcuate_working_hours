@@ -37,3 +37,101 @@ it.each([
   const cell = within(screen.getByRole('button', { name: `编辑 ${day.date}` }))
   expect(cell.getByText(label)).toHaveAttribute('data-balance-sign', sign)
 })
+
+it.each([
+  { date: '2021-02-10', rows: 4 },
+  { date: '2026-09-08', rows: 5 },
+  { date: '2026-08-08', rows: 6 },
+])('uses $rows calendar weeks on desktop for $date', ({ date, rows }) => {
+  render(<Calendar desktop selected={date} today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} />)
+  const table = screen.getByRole('table')
+  expect(within(table).getAllByRole('row')).toHaveLength(rows + 1)
+  expect(within(table).getAllByRole('button')).toHaveLength(rows * 7)
+  expect(screen.getByRole('heading', { name: '工时日历' })).toBeInTheDocument()
+})
+
+it('marks the desktop selection separately from today and passes adjacent-month dates unchanged', () => {
+  const onPick = vi.fn()
+  render(<Calendar desktop selected="2026-09-08" today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
+  expect(screen.getByRole('button', { name: '选择 2026-09-08', pressed: true })).toBeInTheDocument()
+  const today = screen.getByRole('button', { name: '选择 2026-09-09', pressed: false })
+  expect(today).toHaveAttribute('aria-current', 'date')
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-08-31' }))
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-10-04' }))
+  expect(onPick.mock.calls).toEqual([['2026-08-31'], ['2026-10-04']])
+})
+
+it('keeps six editable weeks and the original heading on mobile even for a four-week month', () => {
+  render(<Calendar selected="2021-02-10" today="2021-02-10" days={[]} busy={false} onPick={vi.fn()} />)
+  expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(7)
+  expect(within(screen.getByRole('table')).getAllByRole('button')).toHaveLength(42)
+  const selected = screen.getByRole('button', { name: '编辑 2021-02-10' })
+  expect(selected).toHaveAttribute('aria-current', 'date')
+  expect(selected).not.toHaveAttribute('aria-pressed')
+  expect(screen.getByText('点击日期打卡 / 编辑')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: '工时日历' })).not.toBeInTheDocument()
+})
+
+it.each(['0099-09-08', '0004-02-29'])('preserves low years and leap dates in desktop selection: %s', date => {
+  const onPick = vi.fn()
+  render(<Calendar desktop selected={date} today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
+  fireEvent.click(screen.getByRole('button', { name: `选择 ${date}`, pressed: true }))
+  expect(onPick).toHaveBeenCalledWith(date)
+})
+
+it.each([
+  { finalDate: '2026-09-09', outcome: 'successful' },
+  { finalDate: '2026-09-08', outcome: 'failed' },
+])('restores the selected PC date focus after a $outcome calendar request', ({ finalDate }) => {
+  const onPick = vi.fn()
+  const view = (selected: string, busy: boolean) => <Calendar desktop selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={onPick} />
+  const { rerender } = render(view('2026-09-08', false))
+  const requested = screen.getByRole('button', { name: '选择 2026-09-09' })
+  expect(screen.getByRole('button', { name: '选择 2026-09-08' })).not.toHaveFocus()
+  requested.focus()
+  fireEvent.click(requested)
+  expect(onPick).toHaveBeenCalledWith('2026-09-09')
+  // Blur before disabling because jsdom cannot blur an already disabled button like Chrome does.
+  requested.blur()
+  rerender(view('2026-09-08', true))
+  expect(document.body).toHaveFocus()
+  rerender(view(finalDate, false))
+  expect(screen.getByRole('button', { name: `选择 ${finalDate}`, pressed: true })).toHaveFocus()
+})
+
+it.each([false, true])('does not reclaim focus after the user moves to another control (then blurs: %s)', blurOther => {
+  const view = (selected: string, busy: boolean) => <>
+    <button type="button">其他操作</button>
+    <Calendar desktop selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
+  </>
+  const { rerender } = render(view('2026-09-08', false))
+  const requested = screen.getByRole('button', { name: '选择 2026-09-09' })
+  requested.focus()
+  fireEvent.click(requested)
+  rerender(view('2026-09-08', true))
+  const other = screen.getByRole('button', { name: '其他操作' })
+  other.focus()
+  if (blurOther) other.blur()
+  rerender(view('2026-09-09', false))
+  expect(blurOther ? document.body : other).toHaveFocus()
+})
+
+it('does not focus a calendar cell after an unrelated busy cycle such as a theme change', () => {
+  const view = (busy: boolean) => <Calendar desktop selected="2026-09-08" today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
+  const { rerender } = render(view(false))
+  rerender(view(true))
+  rerender(view(false))
+  expect(document.body).toHaveFocus()
+})
+
+it('leaves mobile focus handling to the existing editor after selecting a date', () => {
+  const view = (selected: string, busy: boolean) => <Calendar selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
+  const { rerender } = render(view('2026-09-08', false))
+  const requested = screen.getByRole('button', { name: '编辑 2026-09-09' })
+  requested.focus()
+  fireEvent.click(requested)
+  requested.blur()
+  rerender(view('2026-09-08', true))
+  rerender(view('2026-09-09', false))
+  expect(document.body).toHaveFocus()
+})

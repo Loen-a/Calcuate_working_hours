@@ -11,19 +11,19 @@ export default function Header(props: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [y, m] = props.date.split('-')
   return (
-    <header className="border-b border-rule">
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-        <div className="flex items-baseline gap-3">
+    <header className="workhours-header border-b border-rule">
+      <div className="workhours-header-inner max-w-5xl mx-auto px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <div className="workhours-brand flex items-baseline gap-3">
           <span className="workhours-title font-display text-[26px] font-medium tracking-tight">工时</span>
           <span className="workhours-label text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Workhours</span>
         </div>
-        <nav className="flex items-center gap-1" aria-label="月份导航">
+        <nav className="workhours-month-nav flex items-center gap-1" aria-label="月份导航">
           <button onClick={props.onPrev} disabled={props.busy} className="w-9 h-10 text-xl hover:bg-surface rounded-full disabled:opacity-40" aria-label="上一月">‹</button>
           <span className="workhours-month font-display text-[19px] tabular-nums mx-2 min-w-[100px] text-center">{y} · {m}</span>
           <button onClick={props.onNext} disabled={props.busy} className="w-9 h-10 text-xl hover:bg-surface rounded-full disabled:opacity-40" aria-label="下一月">›</button>
           <button onClick={props.onToday} disabled={props.busy} className={buttonClass}>今天</button>
         </nav>
-        <div className="flex items-center justify-end flex-wrap gap-2 w-full">
+        <div className="workhours-header-actions flex items-center justify-end flex-wrap gap-2 w-full">
           <button onClick={props.onExport} disabled={props.busy} className={buttonClass} title="导出打卡、设置、请假和日历的完整 JSON 备份">导出</button>
           <button onClick={() => fileInputRef.current?.click()} disabled={props.busy} className={buttonClass}>{props.importBusy ? '导入中…' : '导入'}</button>
           <button onClick={props.onThemeToggle} disabled={props.busy} className={buttonClass} title={props.desktop ? '切换主题（冷色 / 青绿 / 经典绿）' : '切换主题（青绿 / 冷色）'}>{props.theme === 'classic' ? '经典绿' : props.theme === 'teal' ? '青绿' : '冷色'}</button>

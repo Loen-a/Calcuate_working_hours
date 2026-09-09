@@ -74,6 +74,7 @@ beforeEach(() => {
 })
 
 it('uses the server prediction and monthly totals, and preserves the selected date in the interface switch', async () => {
+  mockDesktopViewport(false)
   render(<App />)
   expect(await screen.findByText('21:17')).toBeInTheDocument()
   expect(screen.getByText('189h')).toBeInTheDocument()
@@ -86,6 +87,7 @@ it('uses the server prediction and monthly totals, and preserves the selected da
 })
 
 it('saves a start-only record without inventing an end time', async () => {
+  mockDesktopViewport(false)
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
   await screen.findByRole('dialog')
@@ -96,6 +98,7 @@ it('saves a start-only record without inventing an end time', async () => {
 })
 
 it('saves cross-midnight punches and retains inputs when saving fails', async () => {
+  mockDesktopViewport(false)
   dashboard.days[7].entry = { start_time: '22:10', end_time: '07:40' }
   entryError = '数据库写入失败'
   render(<App />)
@@ -110,6 +113,7 @@ it('saves cross-midnight punches and retains inputs when saving fails', async ()
 })
 
 it('sets leave independently without overwriting preserved punches', async () => {
+  mockDesktopViewport(false)
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
   await screen.findByRole('dialog')
@@ -161,7 +165,9 @@ it('locks navigation and other writes while importing, then refreshes the same s
   expect(await screen.findByRole('button', { name: '导入中…' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '下一月' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '青绿' })).toBeDisabled()
-  fireEvent.click(screen.getByRole('button', { name: `编辑 ${date}` }))
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeDisabled()
+  expect(screen.getByRole('button', { name: '编辑所选日期' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   finish(json({ version: 3, entries: 2 }))
   expect(await screen.findByRole('status')).toHaveTextContent('导入成功，共 2 条记录')
@@ -246,4 +252,39 @@ it('keeps the previous theme visible when saving classic theme fails', async () 
   expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
   expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'classic' })
+})
+
+it('selects a PC calendar date into the detail panel before explicitly opening the editor', async () => {
+  mockDesktopViewport(true)
+  render(<App />)
+  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
+  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
+  expect(within(panel).getByText('21:17')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
+  await waitFor(() => expect(within(panel).getByRole('heading', { name: '2026-09-09' })).toBeInTheDocument())
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(requests.some(request => request.init?.method === 'PUT')).toBe(false)
+  fireEvent.click(within(panel).getByRole('button', { name: '编辑所选日期' }))
+  expect(await screen.findByRole('dialog')).toHaveTextContent('2026-09-09')
+})
+
+it('keeps the previous selected date and details when PC navigation fails', async () => {
+  mockDesktopViewport(true)
+  render(<App />)
+  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
+  dashboardError = '读取所选日期失败'
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('读取所选日期失败')
+  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
+  expect(screen.getByLabelText('查看日期')).toHaveValue(date)
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toHaveAttribute('aria-pressed', 'true')
+})
+
+it('retains mobile click-to-edit and the six-row calendar without the PC side panel', async () => {
+  mockDesktopViewport(false)
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
+  expect(await screen.findByRole('dialog')).toHaveTextContent(date)
+  expect(screen.queryByRole('complementary', { name: '所选日期详情' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('row')).toHaveLength(7)
 })
