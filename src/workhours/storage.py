@@ -196,6 +196,29 @@ class WorkHoursStore:
             ).fetchall()
         return [_interval_from_row(row) for row in rows]
 
+    def get_weather_cache(self, location_key: str) -> tuple[dict, str] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json, fetched_at FROM weather_cache WHERE location_key = ?",
+                (location_key,),
+            ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row["payload_json"]), row["fetched_at"]
+
+    def set_weather_cache(self, location_key: str, payload: dict, fetched_at: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO weather_cache (location_key, payload_json, fetched_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(location_key) DO UPDATE SET
+                    payload_json = excluded.payload_json,
+                    fetched_at = excluded.fetched_at
+                """,
+                (location_key, json.dumps(payload, ensure_ascii=False), fetched_at),
+            )
+
     def save_non_working_interval(
         self,
         interval: NonWorkingInterval,
@@ -306,6 +329,12 @@ class WorkHoursStore:
 
                 CREATE TABLE IF NOT EXISTS holiday_cache (
                     year INTEGER PRIMARY KEY,
+                    payload_json TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS weather_cache (
+                    location_key TEXT PRIMARY KEY,
                     payload_json TEXT NOT NULL,
                     fetched_at TEXT NOT NULL
                 );

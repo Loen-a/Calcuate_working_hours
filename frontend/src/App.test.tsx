@@ -54,6 +54,16 @@ beforeEach(() => {
       const selected = new URL(input, window.location.origin).searchParams.get('reference_date') || date
       return json({ ...dashboard, selected_date: selected })
     }
+    if (path === '/api/weather') return json({
+      city: '杭州', timezone: 'Asia/Shanghai', month: new URL(input, window.location.origin).searchParams.get('month'),
+      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
+      fetched_at: '2026-09-08T00:00:00+00:00', warning: null, days: {},
+    })
+    if (path === '/api/air-quality') return json({
+      city: '杭州', timezone: 'Asia/Shanghai', standard: 'US', month: new URL(input, window.location.origin).searchParams.get('month'),
+      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
+      fetched_at: '2026-09-08T00:00:00Z', warning: null, days: {},
+    })
     if (path === '/api/settings' && init?.method === 'PUT') {
       if (settingsError) return json({ error: settingsError }, 400)
       const settings = JSON.parse(init.body as string)
@@ -74,20 +84,22 @@ beforeEach(() => {
 })
 
 it('uses the server prediction and monthly totals, and preserves the selected date in the interface switch', async () => {
+  mockDesktopViewport(true)
   render(<App />)
   expect(await screen.findByText('21:17')).toBeInTheDocument()
   expect(screen.getByText('189h')).toBeInTheDocument()
   expect(screen.getByText('25h 03m')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', `/interface/old?reference_date=${date}`)
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
-  fireEvent.click(screen.getByRole('button', { name: '编辑 2026-09-09' }))
+  await openDateEditor('2026-09-09')
   await screen.findByRole('dialog')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', '/interface/old?reference_date=2026-09-09')
 })
 
 it('saves a start-only record without inventing an end time', async () => {
+  mockDesktopViewport(true)
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
+  await openDateEditor(date)
   await screen.findByRole('dialog')
   fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '保存打卡' }))
   await waitFor(() => expect(requests.some(r => r.path === `/api/entries/${date}`)).toBe(true))
@@ -96,10 +108,11 @@ it('saves a start-only record without inventing an end time', async () => {
 })
 
 it('saves cross-midnight punches and retains inputs when saving fails', async () => {
+  mockDesktopViewport(true)
   dashboard.days[7].entry = { start_time: '22:10', end_time: '07:40' }
   entryError = '数据库写入失败'
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
+  await openDateEditor(date)
   await screen.findByRole('dialog')
   fireEvent.click(screen.getByRole('button', { name: '保存打卡' }))
   expect(await screen.findByText('数据库写入失败')).toBeInTheDocument()
@@ -110,8 +123,9 @@ it('saves cross-midnight punches and retains inputs when saving fails', async ()
 })
 
 it('sets leave independently without overwriting preserved punches', async () => {
+  mockDesktopViewport(true)
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
+  await openDateEditor(date)
   await screen.findByRole('dialog')
   fireEvent.click(screen.getByRole('button', { name: '设为全天请假' }))
   await waitFor(() => expect(requests.some(r => r.path === `/api/leaves/${date}`)).toBe(true))
@@ -161,7 +175,9 @@ it('locks navigation and other writes while importing, then refreshes the same s
   expect(await screen.findByRole('button', { name: '导入中…' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '下一月' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '青绿' })).toBeDisabled()
-  fireEvent.click(screen.getByRole('button', { name: `编辑 ${date}` }))
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeDisabled()
+  expect(screen.getByRole('button', { name: '编辑所选日期' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   finish(json({ version: 3, entries: 2 }))
   expect(await screen.findByRole('status')).toHaveTextContent('导入成功，共 2 条记录')
@@ -224,13 +240,79 @@ it('keeps the previous theme visible when saving classic theme fails', async () 
   expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'classic' })
 })
 
-it('keeps the existing PC editor and classic theme when the viewport is narrow', async () => {
+it('selects a PC calendar date into the detail panel before explicitly opening the editor', async () => {
+  mockDesktopViewport(true)
+  render(<App />)
+  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
+  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
+  expect(within(panel).getByText('21:17')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
+  await waitFor(() => expect(within(panel).getByRole('heading', { name: '2026-09-09' })).toBeInTheDocument())
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(requests.some(request => request.init?.method === 'PUT')).toBe(false)
+  fireEvent.click(within(panel).getByRole('button', { name: '编辑所选日期' }))
+  expect(await screen.findByRole('dialog')).toHaveTextContent('2026-09-09')
+})
+
+it('keeps the previous selected date and details when PC navigation fails', async () => {
+  mockDesktopViewport(true)
+  render(<App />)
+  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
+  dashboardError = '读取所选日期失败'
+  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('读取所选日期失败')
+  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
+  expect(screen.getByLabelText('查看日期')).toHaveValue(date)
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toHaveAttribute('aria-pressed', 'true')
+})
+
+
+
+it.each(['pending', 'failed'])('keeps PC date selection, editing and saving usable while weather is %s', async mode => {
+  mockDesktopViewport(true)
+  const originalFetch = vi.mocked(fetch).getMockImplementation()!
+  const weatherCalls: RequestInit[] = []
+  vi.mocked(fetch).mockImplementation((input, init) => {
+    if (String(input).startsWith('/api/weather?')) {
+      weatherCalls.push(init || {})
+      return mode === 'pending' ? new Promise<Response>(() => undefined) : Promise.reject(new Error('天气连接失败'))
+    }
+    return originalFetch(input, init)
+  })
+  render(<App />)
+  expect(await screen.findByText(mode === 'pending' ? '天气加载中…' : '天气暂不可用，稍后自动重试')).toBeInTheDocument()
+  const selected = screen.getByRole('button', { name: `选择 ${date}` })
+  expect(selected).toBeEnabled()
+  fireEvent.click(selected)
+  await waitFor(() => expect(selected).toBeEnabled())
+  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
+  fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
+  await waitFor(() => expect(requests.some(request => request.path === `/api/entries/${date}` && request.init?.method === 'PUT')).toBe(true))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(weatherCalls).toHaveLength(1)
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeEnabled()
+})
+
+
+async function openDateEditor(value: string) {
+  const cell = await screen.findByRole('button', { name: `选择 ${value}` })
+  await waitFor(() => expect(cell).toBeEnabled())
+  fireEvent.click(cell)
+  await waitFor(() => expect(screen.getByLabelText('查看日期')).toHaveValue(value))
+  await waitFor(() => expect(screen.getByRole('button', { name: '编辑所选日期' })).toBeEnabled())
+  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
+  await screen.findByRole('dialog')
+}
+
+it('keeps the PC workspace, classic theme and weather when the viewport is narrow', async () => {
   const resize = mockDesktopViewport(false)
   dashboard.theme = 'classic'
   render(<App />)
   expect(await screen.findByRole('button', { name: '经典绿' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: `编辑 ${date}` }))
-  expect(await screen.findByRole('dialog')).toHaveTextContent(date)
+  expect(screen.getByRole('complementary', { name: '所选日期详情' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeInTheDocument()
+  expect(requests.some(request => request.path === '/api/weather')).toBe(true)
+  expect(requests.some(request => request.path === '/api/air-quality')).toBe(true)
   await act(async () => resize(true))
   await act(async () => resize(false))
   expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()

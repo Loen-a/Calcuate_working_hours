@@ -54,10 +54,8 @@ export default function TrendChart({ days }: Props) {
   const grad = last >= 0 ? 'g-navy' : 'g-plum'
 
   return (
-    <section className="workhours-trend">
+    <section className="workhours-trend" aria-label="工时趋势">
       <div className="flex items-center gap-3 mb-5">
-        <span className="workhours-label text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Trend</span>
-        <span className="text-ink-soft/40 font-mono">·</span>
         <span className="workhours-section-title text-[13px] tracking-[0.2em] text-ink-soft font-mono">
           累计盈余 / 缺口
         </span>
