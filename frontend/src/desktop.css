@@ -1,536 +1,534 @@
-/* Desktop typography follows the original interface; smaller viewports keep their existing styles. */
-@media (min-width: 1024px) {
-  :root,
-  :root[data-theme='teal'] {
-    --font-sans: "Segoe UI", "Microsoft YaHei", sans-serif;
-    --font-display: "Segoe UI", "Microsoft YaHei", sans-serif;
-    --font-mono: "Segoe UI", "Microsoft YaHei", sans-serif;
-  }
-
-  body {
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.45;
-  }
-
-  .workhours-app button,
-  .workhours-app input,
-  .workhours-app select,
-  .workhours-action,
-  .workhours-body {
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-title {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-section-title {
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-label,
-  .workhours-help {
-    font-size: 13px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-meta {
-    font-size: 12px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-month {
-    font-size: 19px;
-    line-height: 1.45;
-  }
-
-  .workhours-stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 1.25;
-  }
-
-  .workhours-forecast-time {
-    font-size: clamp(40px, 3.2vw, 48px);
-    font-weight: 760;
-    letter-spacing: -0.055em;
-    line-height: 1.05;
-  }
-
-  .workhours-forecast-arrow {
-    font-size: 32px;
-    letter-spacing: normal;
-  }
-
-  .workhours-calendar th {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.45;
-  }
-
-  .workhours-calendar-date {
-    font-size: 20px;
-    line-height: 1.45;
-  }
-
-  .workhours-calendar-name,
-  .workhours-calendar-record {
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .workhours-calendar-hours {
-    font-size: 16px;
-    line-height: 1.45;
-  }
-
-  .workhours-calendar-balance {
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.45;
-  }
-
-  .workhours-calendar-badge,
-  .workhours-calendar-status {
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  .workhours-trend .recharts-cartesian-axis-tick-value {
-    font-family: var(--font-sans);
-    font-size: 13px;
-    letter-spacing: normal;
-  }
-
-  .workhours-chart-tooltip {
-    font-size: 14px;
-    line-height: 1.45;
-  }
-
-  .workhours-entry-preview {
-    font-size: 13px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
-
-  .workhours-time-picker,
-  .workhours-time-popover {
-    font-family: var(--font-sans);
-  }
-
-  .workhours-time-preview {
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.055em;
-    line-height: 1.05;
-  }
-
-  .workhours-interval-fields {
-    grid-template-columns: minmax(160px, 1fr) minmax(140px, 160px) minmax(140px, 160px) auto auto;
-  }
-
-  .workhours-interval-fields input {
-    min-width: 0;
-  }
-
-  :root[data-theme='classic'] {
-    --color-paper: #f5f7f4;
-    --color-surface: #ffffff;
-    --color-ink: #17201b;
-    --color-ink-soft: #66736b;
-    --color-rule: #dce4de;
-    --color-navy: #116b5c;
-    --color-plum: #b42318;
-    --color-ochre: #b56b16;
-    --chart-positive: #116b5c;
-    --chart-negative: #b42318;
-    --chart-muted: #66736b;
-    --chart-rule: #dce4de;
-  }
-
-  :root[data-theme='classic'] .workhours-forecast-card {
-    background: #ffffff;
-    border-color: var(--color-rule);
-    color: var(--color-ink);
-  }
-
-  :root[data-theme='classic'] .workhours-primary-action {
-    background-color: #116b5c;
-    border-color: #116b5c;
-    color: #ffffff;
-  }
-
-  :root[data-theme='classic'] .workhours-primary-action:hover {
-    background-color: #0b4d42;
-    border-color: #0b4d42;
-  }
-
-  :root[data-theme='classic'] .workhours-secondary-action {
-    border-color: #116b5c;
-    color: #116b5c;
-  }
-
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='positive'] {
-    color: var(--color-navy);
-  }
-
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='negative'] {
-    color: var(--color-plum);
-  }
-
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='zero'] {
-    color: var(--color-ink);
-  }
-
-  /* Workspace surfaces: light backgrounds, white working areas, restrained accents. */
-  :root {
-    --color-paper: #f7f9fc;
-    --color-surface: #ffffff;
-    --color-rule: #dce3ea;
-    --color-ink-soft: #526174;
-  }
-
-  :root[data-theme='teal'] {
-    --color-paper: #f6faf8;
-    --color-surface: #ffffff;
-    --color-rule: #dce7e1;
-    --color-ink-soft: #52675d;
-  }
-
-  .workhours-header {
-    background: var(--color-surface);
-  }
-
-  .workhours-header-inner,
-  .workhours-content {
-    width: calc(100% - 64px);
-    max-width: 1600px;
-    padding-inline: 0;
-  }
-
-  .workhours-header-inner {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
-    column-gap: 24px;
-    padding-block: 16px;
-  }
-
-  .workhours-brand .workhours-label {
-    display: none;
-  }
-
-  .workhours-header-actions {
-    width: auto;
-    flex-wrap: nowrap;
-  }
-
-  .workhours-action {
-    border-radius: 6px;
-  }
-
-  .workhours-content {
-    padding-block: 24px 36px;
-  }
-
-  .workhours-toolbar {
-    margin-bottom: 20px;
-  }
-
-  .workhours-summary-grid {
-    gap: 0;
-    border: 1px solid var(--color-rule);
-    border-radius: 10px;
-    background: var(--color-surface);
-    overflow: hidden;
-  }
-
-  .workhours-summary-grid > div {
-    padding: 18px 24px;
-    border: 0;
-    border-right: 1px solid var(--color-rule);
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .workhours-summary-grid > div:last-child {
-    border-right: 0;
-  }
-
-  .workhours-summary .workhours-stat-value {
-    margin-block: 8px;
-  }
-
-  .workhours-period-summary {
-    margin-block: 14px 20px;
-    font-size: 14px;
-  }
-
-  .workhours-workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 24px;
-    margin-bottom: 24px;
-  }
-
-  .workhours-calendar--desktop,
-  .workhours-day-panel,
-  .workhours-content > .workhours-trend,
-  .workhours-content > details {
-    min-width: 0;
-    background: var(--color-surface);
-    border: 1px solid var(--color-rule);
-    border-radius: 10px;
-  }
-
-  .workhours-calendar--desktop {
-    overflow: hidden;
-  }
-
-  .workhours-calendar-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 20px 22px 16px;
-  }
-
-  .workhours-calendar-range {
-    margin-top: 5px;
-    color: var(--color-ink-soft);
-  }
-
-  .workhours-calendar-legend {
-    display: flex;
-    gap: 14px;
-    color: var(--color-ink-soft);
-    font-size: 13px;
-  }
-
-  .workhours-calendar-legend span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .workhours-calendar-legend span::before {
-    content: '';
-    width: 7px;
-    height: 7px;
-    border-radius: 2px;
-    background: var(--color-navy);
-  }
-
-  .workhours-calendar-legend [data-kind='rest']::before {
-    background: var(--color-plum);
-  }
-
-  .workhours-calendar-legend [data-kind='leave']::before {
-    background: var(--color-ochre);
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-grid {
-    border: 0;
-    border-radius: 0;
-    background: var(--color-surface);
-  }
-
-  .workhours-calendar--desktop th {
-    padding-block: 10px;
-    background: var(--color-paper);
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-cell {
-    min-height: 104px;
-    padding: 10px 14px;
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-date {
-    line-height: 1.1;
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-name {
-    margin-top: 4px;
-    line-height: 1.3;
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-record {
-    min-height: 35px;
-    margin-top: 6px;
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-hours,
-  .workhours-calendar--desktop .workhours-calendar-balance {
-    line-height: 1.2;
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-cell:hover {
-    background: var(--color-paper);
-  }
-
-  .workhours-calendar--desktop .workhours-calendar-cell[aria-pressed='true'] {
-    background: color-mix(in srgb, var(--color-navy) 5%, white);
-  }
-
-  .workhours-day-panel {
-    padding: 22px;
-  }
-
-  .workhours-day-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .workhours-day-label,
-  .workhours-day-punches dt,
-  .workhours-day-facts dt {
-    color: var(--color-ink-soft);
-    font-size: 14px;
-  }
-
-  .workhours-day-heading h2 {
-    margin-top: 5px;
-    color: var(--color-ink);
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 1.25;
-  }
-
-  .workhours-day-today {
-    padding: 4px 9px;
-    border: 1px solid var(--color-rule);
-    border-radius: 5px;
-    color: var(--color-navy);
-    font-size: 13px;
-  }
-
-  .workhours-day-status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-    color: var(--color-ink-soft);
-    font-size: 13px;
-  }
-
-  .workhours-day-punches {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 24px;
-  }
-
-  .workhours-day-punches dd {
-    margin-top: 5px;
-    color: var(--color-ink);
-    font-size: 22px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .workhours-day-prediction {
-    margin-block: 22px;
-    padding-block: 18px;
-    border-block: 1px solid var(--color-rule);
-  }
-
-  .workhours-day-prediction h3 {
-    color: var(--color-ink-soft);
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .workhours-day-prediction-time {
-    margin-top: 8px;
-    color: var(--color-navy);
-    font-size: 44px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.035em;
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-  }
-
-  .workhours-day-prediction-note {
-    margin-top: 10px;
-    color: var(--color-ink-soft);
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  .workhours-day-facts {
-    display: grid;
-    gap: 12px;
-  }
-
-  .workhours-day-facts > div {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
-  }
-
-  .workhours-day-facts dd {
-    text-align: right;
-    color: var(--color-ink);
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .workhours-app .workhours-day-edit {
-    width: 100%;
-    margin-top: 24px;
-    padding: 11px 14px;
-    border: 1px solid var(--color-navy);
-    border-radius: 6px;
-    background: var(--color-navy);
-    color: white;
-  }
-
-  .workhours-app .workhours-day-edit:disabled {
-    opacity: .45;
-    cursor: wait;
-  }
-
-  .workhours-content > .workhours-trend {
-    padding: 22px;
-  }
-
-  .workhours-content > details {
-    margin-top: 24px;
-    padding: 20px 22px;
-  }
-
-  .workhours-calendar-source {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px 20px;
-    text-align: left;
-    font-size: 13px;
-  }
-
-  .workhours-calendar-source button {
-    margin: 0;
-    font-size: 14px;
-    border-radius: 6px;
-  }
+/* PC-only presentation. Narrow windows scroll the same desktop interface. */
+:root,
+:root[data-theme='teal'] {
+  --font-sans: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-display: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.workhours-app button,
+.workhours-app input,
+.workhours-app select,
+.workhours-action,
+.workhours-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-label,
+.workhours-help {
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-meta {
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-month {
+  font-size: 19px;
+  line-height: 1.45;
+}
+
+.workhours-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.workhours-forecast-time {
+  font-size: clamp(40px, 3.2vw, 48px);
+  font-weight: 760;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.workhours-forecast-arrow {
+  font-size: 32px;
+  letter-spacing: normal;
+}
+
+.workhours-calendar th {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.workhours-calendar-date {
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.workhours-calendar-name,
+.workhours-calendar-record {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.workhours-calendar-hours {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.workhours-calendar-balance {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.workhours-calendar-badge,
+.workhours-calendar-status {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workhours-trend .recharts-cartesian-axis-tick-value {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: normal;
+}
+
+.workhours-chart-tooltip {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.workhours-entry-preview {
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
+
+.workhours-time-picker,
+.workhours-time-popover {
+  font-family: var(--font-sans);
+}
+
+.workhours-time-preview {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.workhours-interval-fields {
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 160px) minmax(140px, 160px) auto auto;
+}
+
+.workhours-interval-fields input {
+  min-width: 0;
+}
+
+:root[data-theme='classic'] {
+  --color-paper: #f5f7f4;
+  --color-surface: #ffffff;
+  --color-ink: #17201b;
+  --color-ink-soft: #66736b;
+  --color-rule: #dce4de;
+  --color-navy: #116b5c;
+  --color-plum: #b42318;
+  --color-ochre: #b56b16;
+  --chart-positive: #116b5c;
+  --chart-negative: #b42318;
+  --chart-muted: #66736b;
+  --chart-rule: #dce4de;
+}
+
+:root[data-theme='classic'] .workhours-forecast-card {
+  background: #ffffff;
+  border-color: var(--color-rule);
+  color: var(--color-ink);
+}
+
+:root[data-theme='classic'] .workhours-primary-action {
+  background-color: #116b5c;
+  border-color: #116b5c;
+  color: #ffffff;
+}
+
+:root[data-theme='classic'] .workhours-primary-action:hover {
+  background-color: #0b4d42;
+  border-color: #0b4d42;
+}
+
+:root[data-theme='classic'] .workhours-secondary-action {
+  border-color: #116b5c;
+  color: #116b5c;
+}
+
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='positive'] {
+  color: var(--color-navy);
+}
+
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='negative'] {
+  color: var(--color-plum);
+}
+
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='zero'] {
+  color: var(--color-ink);
+}
+
+/* Workspace surfaces: light backgrounds, white working areas, restrained accents. */
+:root {
+  --color-paper: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-rule: #dce3ea;
+  --color-ink-soft: #526174;
+}
+
+:root[data-theme='teal'] {
+  --color-paper: #f6faf8;
+  --color-surface: #ffffff;
+  --color-rule: #dce7e1;
+  --color-ink-soft: #52675d;
+}
+
+.workhours-header {
+  background: var(--color-surface);
+}
+
+.workhours-header-inner,
+.workhours-content {
+  width: calc(100% - 64px);
+  max-width: 1600px;
+  padding-inline: 0;
+}
+
+.workhours-header-inner {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  column-gap: 24px;
+  padding-block: 16px;
+}
+
+.workhours-brand .workhours-label {
+  display: none;
+}
+
+.workhours-header-actions {
+  width: auto;
+  flex-wrap: nowrap;
+}
+
+.workhours-action {
+  border-radius: 6px;
+}
+
+.workhours-content {
+  padding-block: 24px 36px;
+}
+
+.workhours-toolbar {
+  margin-bottom: 20px;
+}
+
+.workhours-summary-grid {
+  gap: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.workhours-summary-grid > div {
+  padding: 18px 24px;
+  border: 0;
+  border-right: 1px solid var(--color-rule);
+  border-radius: 0;
+  background: transparent;
+}
+
+.workhours-summary-grid > div:last-child {
+  border-right: 0;
+}
+
+.workhours-summary .workhours-stat-value {
+  margin-block: 8px;
+}
+
+.workhours-period-summary {
+  margin-block: 14px 20px;
+  font-size: 14px;
+}
+
+.workhours-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.workhours-calendar--desktop,
+.workhours-day-panel,
+.workhours-content > .workhours-trend,
+.workhours-content > details {
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 10px;
+}
+
+.workhours-calendar--desktop {
+  overflow: hidden;
+}
+
+.workhours-calendar-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 22px 16px;
+}
+
+.workhours-calendar-range {
+  margin-top: 5px;
+  color: var(--color-ink-soft);
+}
+
+.workhours-calendar-legend {
+  display: flex;
+  gap: 14px;
+  color: var(--color-ink-soft);
+  font-size: 13px;
+}
+
+.workhours-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workhours-calendar-legend span::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--color-navy);
+}
+
+.workhours-calendar-legend [data-kind='rest']::before {
+  background: var(--color-plum);
+}
+
+.workhours-calendar-legend [data-kind='leave']::before {
+  background: var(--color-ochre);
+}
+
+.workhours-calendar--desktop .workhours-calendar-grid {
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+}
+
+.workhours-calendar--desktop th {
+  padding-block: 10px;
+  background: var(--color-paper);
+}
+
+.workhours-calendar--desktop .workhours-calendar-cell {
+  min-height: 104px;
+  padding: 10px 14px;
+}
+
+.workhours-calendar--desktop .workhours-calendar-date {
+  line-height: 1.1;
+}
+
+.workhours-calendar--desktop .workhours-calendar-name {
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.workhours-calendar--desktop .workhours-calendar-record {
+  min-height: 35px;
+  margin-top: 6px;
+}
+
+.workhours-calendar--desktop .workhours-calendar-hours,
+.workhours-calendar--desktop .workhours-calendar-balance {
+  line-height: 1.2;
+}
+
+.workhours-calendar--desktop .workhours-calendar-cell:hover {
+  background: var(--color-paper);
+}
+
+.workhours-calendar--desktop .workhours-calendar-cell[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--color-navy) 5%, white);
+}
+
+.workhours-day-panel {
+  padding: 22px;
+}
+
+.workhours-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workhours-day-label,
+.workhours-day-punches dt,
+.workhours-day-facts dt {
+  color: var(--color-ink-soft);
+  font-size: 14px;
+}
+
+.workhours-day-heading h2 {
+  margin-top: 5px;
+  color: var(--color-ink);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.workhours-day-today {
+  padding: 4px 9px;
+  border: 1px solid var(--color-rule);
+  border-radius: 5px;
+  color: var(--color-navy);
+  font-size: 13px;
+}
+
+.workhours-day-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--color-ink-soft);
+  font-size: 13px;
+}
+
+.workhours-day-punches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.workhours-day-punches dd {
+  margin-top: 5px;
+  color: var(--color-ink);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.workhours-day-prediction {
+  margin-block: 22px;
+  padding-block: 18px;
+  border-block: 1px solid var(--color-rule);
+}
+
+.workhours-day-prediction h3 {
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.workhours-day-prediction-time {
+  margin-top: 8px;
+  color: var(--color-navy);
+  font-size: 44px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.workhours-day-prediction-note {
+  margin-top: 10px;
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.workhours-day-facts {
+  display: grid;
+  gap: 12px;
+}
+
+.workhours-day-facts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.workhours-day-facts dd {
+  text-align: right;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.workhours-app .workhours-day-edit {
+  width: 100%;
+  margin-top: 24px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-navy);
+  border-radius: 6px;
+  background: var(--color-navy);
+  color: white;
+}
+
+.workhours-app .workhours-day-edit:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+
+.workhours-content > .workhours-trend {
+  padding: 22px;
+}
+
+.workhours-content > details {
+  margin-top: 24px;
+  padding: 20px 22px;
+}
+
+.workhours-calendar-source {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.workhours-calendar-source button {
+  margin: 0;
+  font-size: 14px;
+  border-radius: 6px;
 }
 
 @media (min-width: 1280px) {
@@ -544,7 +542,7 @@
   }
 }
 
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (max-width: 1279px) {
   .workhours-day-panel {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -572,118 +570,116 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .workhours-weather-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 9px;
-    margin-top: 5px;
-    color: var(--color-ink-soft);
-    font-size: 12px;
-    line-height: 1.4;
-  }
+.workhours-weather-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  margin-top: 5px;
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
 
-  .workhours-weather-heading a {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
+.workhours-weather-heading a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
-  .workhours-weather-note {
-    color: var(--color-ink-soft);
-  }
+.workhours-weather-note {
+  color: var(--color-ink-soft);
+}
 
-  .workhours-calendar--desktop .workhours-calendar-cell {
-    container-type: inline-size;
-    container-name: weather-cell;
-  }
+.workhours-calendar--desktop .workhours-calendar-cell {
+  container-type: inline-size;
+  container-name: weather-cell;
+}
 
-  .workhours-calendar--desktop .workhours-calendar-cell {
-    padding-inline: 8px;
-  }
+.workhours-calendar--desktop .workhours-calendar-cell {
+  padding-inline: 8px;
+}
 
-  .workhours-calendar--desktop .workhours-calendar-date-row {
-    justify-content: flex-start;
-    gap: 4px;
-  }
+.workhours-calendar--desktop .workhours-calendar-date-row {
+  justify-content: flex-start;
+  gap: 4px;
+}
 
-  .workhours-calendar-name-text {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.workhours-calendar-name-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
+.workhours-calendar-cell--weather .workhours-calendar-date-row,
+.workhours-calendar-cell--weather .workhours-calendar-name {
+  width: calc(100% - 64px);
+}
+
+.workhours-weather-day {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  gap: 2px;
+  width: 60px;
+  color: var(--color-ink-soft);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.workhours-weather-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+
+.workhours-weather-readings {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.workhours-weather-temperature {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.workhours-weather-detail {
+  display: none;
+}
+
+.workhours-weather-aqi {
+  font-weight: 600;
+  padding-inline: 2px;
+  border-radius: 2px;
+}
+
+.workhours-weather-aqi[data-category='good'] { color: #166534; background: #dcfce7; }
+.workhours-weather-aqi[data-category='moderate'] { color: #854d0e; background: #fef9c3; }
+.workhours-weather-aqi[data-category='sensitive'] { color: #9a3412; background: #ffedd5; }
+.workhours-weather-aqi[data-category='unhealthy'] { color: #b91c1c; background: #fee2e2; }
+.workhours-weather-aqi[data-category='very-unhealthy'] { color: #6b21a8; background: #f3e8ff; }
+.workhours-weather-aqi[data-category='hazardous'] { color: #831843; background: #fce7f3; }
+
+@container weather-cell (min-width: 145px) {
   .workhours-calendar-cell--weather .workhours-calendar-date-row,
   .workhours-calendar-cell--weather .workhours-calendar-name {
-    width: calc(100% - 64px);
+    width: calc(100% - 100px);
   }
 
   .workhours-weather-day {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    display: grid;
-    justify-items: center;
-    align-items: center;
-    gap: 2px;
-    width: 60px;
-    color: var(--color-ink-soft);
-    font-size: 11px;
-    line-height: 14px;
-  }
-
-  .workhours-weather-icon {
-    display: block;
-    width: 32px;
-    height: 32px;
-  }
-
-  .workhours-weather-readings {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    white-space: nowrap;
-  }
-
-  .workhours-weather-temperature {
-    display: block;
-    font-variant-numeric: tabular-nums;
+    width: 96px;
+    min-height: 44px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    justify-items: start;
+    gap: 4px;
   }
 
   .workhours-weather-detail {
-    display: none;
-  }
-
-  .workhours-weather-aqi {
-    font-weight: 600;
-    padding-inline: 2px;
-    border-radius: 2px;
-  }
-
-  .workhours-weather-aqi[data-category='good'] { color: #166534; background: #dcfce7; }
-  .workhours-weather-aqi[data-category='moderate'] { color: #854d0e; background: #fef9c3; }
-  .workhours-weather-aqi[data-category='sensitive'] { color: #9a3412; background: #ffedd5; }
-  .workhours-weather-aqi[data-category='unhealthy'] { color: #b91c1c; background: #fee2e2; }
-  .workhours-weather-aqi[data-category='very-unhealthy'] { color: #6b21a8; background: #f3e8ff; }
-  .workhours-weather-aqi[data-category='hazardous'] { color: #831843; background: #fce7f3; }
-
-  @container weather-cell (min-width: 145px) {
-    .workhours-calendar-cell--weather .workhours-calendar-date-row,
-    .workhours-calendar-cell--weather .workhours-calendar-name {
-      width: calc(100% - 100px);
-    }
-
-    .workhours-weather-day {
-      width: 96px;
-      min-height: 44px;
-      grid-template-columns: 32px minmax(0, 1fr);
-      justify-items: start;
-      gap: 4px;
-    }
-
-    .workhours-weather-detail {
-      display: block;
-    }
+    display: block;
   }
 }

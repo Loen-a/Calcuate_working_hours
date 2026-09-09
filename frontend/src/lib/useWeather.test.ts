@@ -68,7 +68,7 @@ it('cancels an obsolete month and ignores its late response even if transport ig
   expect(result.current.data?.days['2026-09-09']).toBeUndefined()
 })
 
-it('does not request on mobile and refreshes when returning to PC without refetching the same month on rerender', async () => {
+it('does not request while disabled and resumes without refetching the same month on rerender', async () => {
   const { result, rerender } = renderHook(({ enabled }) => useWeather('2026-09', enabled), { initialProps: { enabled: false } })
   expect(getWeather).not.toHaveBeenCalled()
   rerender({ enabled: true })

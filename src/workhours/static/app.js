@@ -1,17 +1,6 @@
 "use strict";
 
 (() => {
-  const table = document.querySelector("#prediction-table");
-  const toggle = document.querySelector("#toggle-other-days");
-
-  if (table && toggle) {
-    toggle.addEventListener("click", () => {
-      const expanded = table.classList.toggle("show-all");
-      toggle.setAttribute("aria-expanded", String(expanded));
-      toggle.textContent = expanded ? "收起其他工作日" : "显示其他工作日";
-    });
-  }
-
   const focus = document.querySelector("#selected-forecast");
   const previewUrl = focus?.dataset.previewUrl;
   if (!previewUrl) {

@@ -11,20 +11,20 @@ const restDay: Day = {
 }
 it('identifies a complete uncounted rest-day record without requesting more punches', () => {
   render(<Calendar selected={restDay.date} today={restDay.date} days={[restDay]} busy={false} onPick={vi.fn()} />)
-  const cell = within(screen.getByRole('button', { name: `编辑 ${restDay.date}` }))
+  const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
   expect(cell.getByText('已记录')).toHaveAttribute('title', '已记录 · 不计工时')
   expect(cell.queryByText('待补全')).not.toBeInTheDocument()
 })
 it('only asks to complete a record when an endpoint is missing', () => {
   render(<Calendar selected={restDay.date} today={restDay.date} days={[{ ...restDay, entry: { start_time: '08:00', end_time: null } }]} busy={false} onPick={vi.fn()} />)
-  expect(within(screen.getByRole('button', { name: `编辑 ${restDay.date}` })).getByText('待补全')).toBeInTheDocument()
+  expect(within(screen.getByRole('button', { name: `选择 ${restDay.date}` })).getByText('待补全')).toBeInTheDocument()
 })
 it('renders and selects the actual four-digit year before 0100', () => {
   const onPick = vi.fn()
   render(<Calendar selected="0099-09-08" today="2026-09-08" days={[]} busy={false} onPick={onPick} />)
-  fireEvent.click(screen.getByRole('button', { name: '编辑 0099-09-08' }))
+  fireEvent.click(screen.getByRole('button', { name: '选择 0099-09-08' }))
   expect(onPick).toHaveBeenCalledWith('0099-09-08')
-  expect(screen.queryByRole('button', { name: '编辑 1999-09-08' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '选择 1999-09-08' })).not.toBeInTheDocument()
 })
 
 it.each([
@@ -34,7 +34,7 @@ it.each([
 ])('exposes the $sign balance for theme-specific colors without changing its value', ({ minutes, label, sign }) => {
   const day = { ...restDay, is_workday: true, calendar_name: '工作日', actual_minutes: 540 + minutes, daily_balance_minutes: minutes }
   render(<Calendar selected={day.date} today={day.date} days={[day]} busy={false} onPick={vi.fn()} />)
-  const cell = within(screen.getByRole('button', { name: `编辑 ${day.date}` }))
+  const cell = within(screen.getByRole('button', { name: `选择 ${day.date}` }))
   expect(cell.getByText(label)).toHaveAttribute('data-balance-sign', sign)
 })
 
@@ -43,7 +43,7 @@ it.each([
   { date: '2026-09-08', rows: 5 },
   { date: '2026-08-08', rows: 6 },
 ])('uses $rows calendar weeks on desktop for $date', ({ date, rows }) => {
-  render(<Calendar desktop selected={date} today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} />)
+  render(<Calendar selected={date} today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} />)
   const table = screen.getByRole('table')
   expect(within(table).getAllByRole('row')).toHaveLength(rows + 1)
   expect(within(table).getAllByRole('button')).toHaveLength(rows * 7)
@@ -52,7 +52,7 @@ it.each([
 
 it('marks the desktop selection separately from today and passes adjacent-month dates unchanged', () => {
   const onPick = vi.fn()
-  render(<Calendar desktop selected="2026-09-08" today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
+  render(<Calendar selected="2026-09-08" today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
   expect(screen.getByRole('button', { name: '选择 2026-09-08', pressed: true })).toBeInTheDocument()
   const today = screen.getByRole('button', { name: '选择 2026-09-09', pressed: false })
   expect(today).toHaveAttribute('aria-current', 'date')
@@ -61,20 +61,10 @@ it('marks the desktop selection separately from today and passes adjacent-month 
   expect(onPick.mock.calls).toEqual([['2026-08-31'], ['2026-10-04']])
 })
 
-it('keeps six editable weeks and the original heading on mobile even for a four-week month', () => {
-  render(<Calendar selected="2021-02-10" today="2021-02-10" days={[]} busy={false} onPick={vi.fn()} />)
-  expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(7)
-  expect(within(screen.getByRole('table')).getAllByRole('button')).toHaveLength(42)
-  const selected = screen.getByRole('button', { name: '编辑 2021-02-10' })
-  expect(selected).toHaveAttribute('aria-current', 'date')
-  expect(selected).not.toHaveAttribute('aria-pressed')
-  expect(screen.getByText('点击日期打卡 / 编辑')).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: '工时日历' })).not.toBeInTheDocument()
-})
 
 it.each(['0099-09-08', '0004-02-29'])('preserves low years and leap dates in desktop selection: %s', date => {
   const onPick = vi.fn()
-  render(<Calendar desktop selected={date} today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
+  render(<Calendar selected={date} today="2026-09-09" days={[]} busy={false} onPick={onPick} />)
   fireEvent.click(screen.getByRole('button', { name: `选择 ${date}`, pressed: true }))
   expect(onPick).toHaveBeenCalledWith(date)
 })
@@ -84,7 +74,7 @@ it.each([
   { finalDate: '2026-09-08', outcome: 'failed' },
 ])('restores the selected PC date focus after a $outcome calendar request', ({ finalDate }) => {
   const onPick = vi.fn()
-  const view = (selected: string, busy: boolean) => <Calendar desktop selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={onPick} />
+  const view = (selected: string, busy: boolean) => <Calendar selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={onPick} />
   const { rerender } = render(view('2026-09-08', false))
   const requested = screen.getByRole('button', { name: '选择 2026-09-09' })
   expect(screen.getByRole('button', { name: '选择 2026-09-08' })).not.toHaveFocus()
@@ -102,7 +92,7 @@ it.each([
 it.each([false, true])('does not reclaim focus after the user moves to another control (then blurs: %s)', blurOther => {
   const view = (selected: string, busy: boolean) => <>
     <button type="button">其他操作</button>
-    <Calendar desktop selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
+    <Calendar selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
   </>
   const { rerender } = render(view('2026-09-08', false))
   const requested = screen.getByRole('button', { name: '选择 2026-09-09' })
@@ -117,24 +107,13 @@ it.each([false, true])('does not reclaim focus after the user moves to another c
 })
 
 it('does not focus a calendar cell after an unrelated busy cycle such as a theme change', () => {
-  const view = (busy: boolean) => <Calendar desktop selected="2026-09-08" today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
+  const view = (busy: boolean) => <Calendar selected="2026-09-08" today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
   const { rerender } = render(view(false))
   rerender(view(true))
   rerender(view(false))
   expect(document.body).toHaveFocus()
 })
 
-it('leaves mobile focus handling to the existing editor after selecting a date', () => {
-  const view = (selected: string, busy: boolean) => <Calendar selected={selected} today="2026-09-09" days={[]} busy={busy} onPick={vi.fn()} />
-  const { rerender } = render(view('2026-09-08', false))
-  const requested = screen.getByRole('button', { name: '编辑 2026-09-09' })
-  requested.focus()
-  fireEvent.click(requested)
-  requested.blur()
-  rerender(view('2026-09-08', true))
-  rerender(view('2026-09-09', false))
-  expect(document.body).toHaveFocus()
-})
 
 it('shows provided PC weather without replacing leave/rest labels or adding a separate action', () => {
   const weather = { loading: false, error: null, data: {
@@ -143,7 +122,7 @@ it('shows provided PC weather without replacing leave/rest labels or adding a se
     days: { '2026-09-06': { code: 61, description: '小雨', icon: 'rain', temperature_min: 23.4, temperature_max: 29.1 } },
   } } as const
   const onPick = vi.fn()
-  render(<Calendar desktop selected={restDay.date} today={restDay.date} days={[restDay]} busy={false} onPick={onPick} weather={weather} />)
+  render(<Calendar selected={restDay.date} today={restDay.date} days={[restDay]} busy={false} onPick={onPick} weather={weather} />)
   const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
   expect(cell.getByText('休')).toBeInTheDocument()
   expect(cell.getByText('休息日')).toBeInTheDocument()
@@ -164,7 +143,7 @@ it('never invents sunny weather for null records or dates outside the returned f
       '2026-09-13': { code: 0, description: '晴', icon: 'clear', temperature_min: 20, temperature_max: 30 },
     },
   } }
-  render(<Calendar desktop selected={restDay.date} today={restDay.date} days={[{ ...restDay, leave: true, calendar_name: '全天请假' }]} busy={false} onPick={vi.fn()} weather={weather as never} />)
+  render(<Calendar selected={restDay.date} today={restDay.date} days={[{ ...restDay, leave: true, calendar_name: '全天请假' }]} busy={false} onPick={vi.fn()} weather={weather as never} />)
   const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
   expect(cell.getByText('假')).toBeInTheDocument()
   expect(cell.getByText('全天请假')).toBeInTheDocument()
@@ -178,7 +157,7 @@ it('explains an out-of-range forecast month without claiming an automatic retry 
     city: '杭州', timezone: 'Asia/Shanghai', month: '2026-10', forecast_start: '2026-09-09', forecast_end: '2026-09-15',
     source: 'unavailable', stale: false, fetched_at: null, warning, days: {},
   } } as const
-  render(<Calendar desktop selected="2026-10-01" today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} weather={weather} />)
+  render(<Calendar selected="2026-10-01" today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} weather={weather} />)
   expect(screen.getByText(warning)).toBeInTheDocument()
   expect(screen.getByText('7天预报（°C）')).toBeInTheDocument()
   expect(screen.queryByText('天气暂不可用，稍后自动重试')).not.toBeInTheDocument()
