@@ -1,4 +1,4 @@
-import type { CalendarKind, DashboardData, Entry, Interval, Period, Preview, Theme } from './types'
+import type { CalendarKind, DashboardData, Entry, Interval, Period, Preview, Theme, WeatherResult } from './types'
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -58,3 +58,6 @@ export function importBackup(file: File): Promise<{ version: number; entries: nu
   body.append('file', file)
   return request('/api/backup', { method: 'POST', body })
 }
+
+export const getWeather = (month: string, signal?: AbortSignal) =>
+  request<WeatherResult>('/api/weather?' + new URLSearchParams({ month }), { signal })

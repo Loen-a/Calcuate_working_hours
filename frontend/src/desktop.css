@@ -571,3 +571,72 @@
     grid-column: 1 / -1;
   }
 }
+
+@media (min-width: 1024px) {
+  .workhours-weather-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 9px;
+    margin-top: 5px;
+    color: var(--color-ink-soft);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .workhours-weather-heading a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .workhours-weather-note {
+    color: var(--color-ink-soft);
+  }
+
+  .workhours-calendar--desktop .workhours-calendar-cell {
+    container-type: inline-size;
+    container-name: weather-cell;
+  }
+
+  .workhours-calendar-name--weather {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .workhours-calendar-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workhours-weather-day {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 3px;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    color: var(--color-ink-soft);
+  }
+
+  .workhours-weather-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .workhours-weather-temperature {
+    display: none;
+  }
+
+  @container weather-cell (min-width: 130px) {
+    .workhours-weather-temperature {
+      display: inline;
+    }
+  }
+}

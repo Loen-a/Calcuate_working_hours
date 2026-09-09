@@ -54,6 +54,11 @@ beforeEach(() => {
       const selected = new URL(input, window.location.origin).searchParams.get('reference_date') || date
       return json({ ...dashboard, selected_date: selected })
     }
+    if (path === '/api/weather') return json({
+      city: '杭州', timezone: 'Asia/Shanghai', month: new URL(input, window.location.origin).searchParams.get('month'),
+      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
+      fetched_at: '2026-09-08T00:00:00+00:00', warning: null, days: {},
+    })
     if (path === '/api/settings' && init?.method === 'PUT') {
       if (settingsError) return json({ error: settingsError }, 400)
       const settings = JSON.parse(init.body as string)
@@ -287,4 +292,39 @@ it('retains mobile click-to-edit and the six-row calendar without the PC side pa
   expect(await screen.findByRole('dialog')).toHaveTextContent(date)
   expect(screen.queryByRole('complementary', { name: '所选日期详情' })).not.toBeInTheDocument()
   expect(screen.getAllByRole('row')).toHaveLength(7)
+})
+
+
+it.each(['pending', 'failed'])('keeps PC date selection, editing and saving usable while weather is %s', async mode => {
+  mockDesktopViewport(true)
+  const originalFetch = vi.mocked(fetch).getMockImplementation()!
+  const weatherCalls: RequestInit[] = []
+  vi.mocked(fetch).mockImplementation((input, init) => {
+    if (String(input).startsWith('/api/weather?')) {
+      weatherCalls.push(init || {})
+      return mode === 'pending' ? new Promise<Response>(() => undefined) : Promise.reject(new Error('天气连接失败'))
+    }
+    return originalFetch(input, init)
+  })
+  render(<App />)
+  expect(await screen.findByText(mode === 'pending' ? '天气加载中…' : '天气暂不可用，稍后自动重试')).toBeInTheDocument()
+  const selected = screen.getByRole('button', { name: `选择 ${date}` })
+  expect(selected).toBeEnabled()
+  fireEvent.click(selected)
+  await waitFor(() => expect(selected).toBeEnabled())
+  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
+  fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
+  await waitFor(() => expect(requests.some(request => request.path === `/api/entries/${date}` && request.init?.method === 'PUT')).toBe(true))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(weatherCalls).toHaveLength(1)
+  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeEnabled()
+})
+
+it('does not request or display weather on mobile', async () => {
+  mockDesktopViewport(false)
+  render(<App />)
+  await screen.findByText('Workhours')
+  expect(requests.some(request => request.path === '/api/weather')).toBe(false)
+  expect(screen.queryByText('杭州')).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Open-Meteo' })).not.toBeInTheDocument()
 })

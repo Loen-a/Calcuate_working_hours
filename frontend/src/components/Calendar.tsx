@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import type { Day } from '../lib/types'
+import type { Day, WeatherState } from '../lib/types'
+import WeatherDay from './WeatherDay'
 import { calendarDate, fmtDate, fmtMinutes, signedMinutes } from '../lib/format'
 
-interface Props { selected: string; today: string; days: Day[]; busy: boolean; desktop?: boolean; onPick: (date: string) => void }
+interface Props { selected: string; today: string; days: Day[]; busy: boolean; desktop?: boolean; weather?: WeatherState; onPick: (date: string) => void }
 const WEEK = ['一', '二', '三', '四', '五', '六', '日']
-export default function Calendar({ selected, today, days, busy, desktop = false, onPick }: Props) {
+export default function Calendar({ selected, today, days, busy, desktop = false, weather, onPick }: Props) {
   const calendarRef = useRef<HTMLElement>(null)
   const pendingFocus = useRef<{ origin: HTMLButtonElement; cancelled: boolean } | null>(null)
   useEffect(() => {
@@ -40,12 +41,22 @@ export default function Calendar({ selected, today, days, busy, desktop = false,
     })
   }, [y, m, monthDays, desktop])
   const byDate = new Map(days.map(day => [day.date, day]))
+  const forecast = desktop && weather?.data?.month === selected.slice(0, 7) ? weather.data : null
+  const weatherNote = weather?.loading ? '天气加载中…'
+    : weather?.error ? '天气暂不可用，稍后自动重试'
+      : forecast?.stale ? '缓存天气待更新'
+        : forecast?.source === 'unavailable' && forecast.warning ? forecast.warning : null
   return (
     <section ref={calendarRef} className={desktop ? 'workhours-calendar workhours-calendar--desktop' : 'workhours-calendar'} aria-label="工时日历">
       {desktop ? <div className="workhours-calendar-heading">
         <div>
           <h2 className="workhours-section-title">工时日历</h2>
           <p className="workhours-calendar-range workhours-help">{fmtDate(y, m, 1)} — {fmtDate(y, m, monthDays)}</p>
+          {weather && <div className="workhours-weather-heading">
+            <span>杭州</span><span>7天预报（°C）</span>
+            <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>
+            {weatherNote && <span className="workhours-weather-note" aria-live="polite" title={weather.error || forecast?.warning || undefined}>{weatherNote}</span>}
+          </div>}
         </div>
         <div className="workhours-calendar-legend" aria-label="日历标记">
           <span data-kind="workday">工作日</span>
@@ -62,6 +73,8 @@ export default function Calendar({ selected, today, days, busy, desktop = false,
             {cells.slice(row * 7, row * 7 + 7).map(cell => {
               const day = byDate.get(cell.date)
               const rest = day && !day.is_workday
+              const dayWeather = forecast && cell.date >= forecast.forecast_start && cell.date <= forecast.forecast_end
+                ? forecast.days[cell.date] : undefined
               return <td key={cell.date} className={`border border-rule p-0 align-top ${cell.other ? 'bg-rule/30' : rest ? 'bg-plum/[0.04]' : ''}`}>
                 <button type="button" aria-label={`${desktop ? '选择' : '编辑'} ${cell.date}`} aria-pressed={desktop ? cell.date === selected : undefined} aria-current={cell.date === today ? 'date' : undefined} disabled={busy} onClick={event => {
                   if (desktop) pendingFocus.current = { origin: event.currentTarget, cancelled: false }
@@ -74,7 +87,12 @@ export default function Calendar({ selected, today, days, busy, desktop = false,
                       : rest ? <span className="workhours-calendar-badge text-[11px] px-1 py-px bg-plum/10 text-plum rounded-sm">休</span>
                         : day?.manual_override === 'workday' ? <span className="workhours-calendar-badge text-[11px] px-1 py-px bg-navy/10 text-navy rounded-sm">班</span> : null}
                   </div>
-                  <div className="workhours-calendar-name text-[10px] sm:text-[12px] text-ink-soft mt-1.5 truncate">{day?.calendar_name || '\u00a0'}</div>
+                  <div className={`workhours-calendar-name text-[10px] sm:text-[12px] text-ink-soft mt-1.5 truncate ${desktop && weather ? 'workhours-calendar-name--weather' : ''}`}>
+                    {desktop && weather ? <>
+                      <span className="workhours-calendar-name-text" title={day?.calendar_name}>{day?.calendar_name || '\u00a0'}</span>
+                      <WeatherDay weather={dayWeather} />
+                    </> : day?.calendar_name || '\u00a0'}
+                  </div>
                   <div className="workhours-calendar-record min-h-10 mt-2 font-mono text-[11px] sm:text-[13px] tabular-nums leading-snug">
                     {day?.actual_minutes != null ? <>
                       <div className="workhours-calendar-hours text-ink">{fmtMinutes(day.actual_minutes)}</div>

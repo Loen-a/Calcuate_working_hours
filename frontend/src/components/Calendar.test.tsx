@@ -135,3 +135,52 @@ it('leaves mobile focus handling to the existing editor after selecting a date',
   rerender(view('2026-09-09', false))
   expect(document.body).toHaveFocus()
 })
+
+it('shows provided PC weather without replacing leave/rest labels or adding a separate action', () => {
+  const weather = { loading: false, error: null, data: {
+    city: '杭州', timezone: 'Asia/Shanghai', month: '2026-09', forecast_start: '2026-09-06', forecast_end: '2026-09-12',
+    source: 'cache', stale: false, fetched_at: '2026-09-06T00:00:00Z', warning: null,
+    days: { '2026-09-06': { code: 61, description: '小雨', icon: 'rain', temperature_min: 23.4, temperature_max: 29.1 } },
+  } } as const
+  const onPick = vi.fn()
+  render(<Calendar desktop selected={restDay.date} today={restDay.date} days={[restDay]} busy={false} onPick={onPick} weather={weather} />)
+  const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
+  expect(cell.getByText('休')).toBeInTheDocument()
+  expect(cell.getByText('休息日')).toBeInTheDocument()
+  const forecast = cell.getByTitle('小雨，最低 23.4°C，最高 29.1°C')
+  expect(forecast).not.toHaveAttribute('tabindex')
+  fireEvent.click(forecast)
+  expect(onPick).toHaveBeenCalledWith(restDay.date)
+  expect(screen.getByRole('link', { name: 'Open-Meteo' })).toHaveAttribute('href', 'https://open-meteo.com/')
+})
+
+it('never invents sunny weather for null records or dates outside the returned forecast window', () => {
+  const weather = { loading: false, error: null, data: {
+    city: '杭州', timezone: 'Asia/Shanghai', month: '2026-09', forecast_start: '2026-09-06', forecast_end: '2026-09-12',
+    source: 'cache', stale: false, fetched_at: null, warning: null,
+    days: {
+      '2026-09-06': null,
+      '2026-09-05': { code: 0, description: '晴', icon: 'clear', temperature_min: 20, temperature_max: 30 },
+      '2026-09-13': { code: 0, description: '晴', icon: 'clear', temperature_min: 20, temperature_max: 30 },
+    },
+  } }
+  render(<Calendar desktop selected={restDay.date} today={restDay.date} days={[{ ...restDay, leave: true, calendar_name: '全天请假' }]} busy={false} onPick={vi.fn()} weather={weather as never} />)
+  const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
+  expect(cell.getByText('假')).toBeInTheDocument()
+  expect(cell.getByText('全天请假')).toBeInTheDocument()
+  expect(screen.queryByTitle('晴，最低 20°C，最高 30°C')).not.toBeInTheDocument()
+  expect(screen.queryByText('20°/30°')).not.toBeInTheDocument()
+})
+
+it('explains an out-of-range forecast month without claiming an automatic retry will provide its weather', () => {
+  const warning = '所选月份暂无预报，仅提供杭州今天起七天的天气。'
+  const weather = { loading: false, error: null, data: {
+    city: '杭州', timezone: 'Asia/Shanghai', month: '2026-10', forecast_start: '2026-09-09', forecast_end: '2026-09-15',
+    source: 'unavailable', stale: false, fetched_at: null, warning, days: {},
+  } } as const
+  render(<Calendar desktop selected="2026-10-01" today="2026-09-09" days={[]} busy={false} onPick={vi.fn()} weather={weather} />)
+  expect(screen.getByText(warning)).toBeInTheDocument()
+  expect(screen.getByText('7天预报（°C）')).toBeInTheDocument()
+  expect(screen.queryByText('天气暂不可用，稍后自动重试')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '选择 2026-10-01' })).toBeEnabled()
+})
