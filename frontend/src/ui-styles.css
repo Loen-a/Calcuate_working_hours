@@ -1,0 +1,268 @@
+/* 风格菜单独立浮在视口内，避免卡片裁切和窄窗口横向滚动影响选项。 */
+.workhours-theme-trigger { display: inline-flex; align-items: center; gap: 7px; }
+.workhours-theme-trigger svg { flex-shrink: 0; }
+.workhours-theme-menu {
+  position: fixed;
+  z-index: 100;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--color-rule);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 12px 40px #101d3430;
+  font-family: var(--font-sans);
+}
+.workhours-theme-menu-label { margin: 5px 10px 7px; color: var(--color-ink-soft); font-size: 12px; }
+.workhours-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-ink);
+  font: 14px/1.4 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.workhours-theme-option:hover,
+.workhours-theme-option[aria-checked='true'] { background: color-mix(in srgb, var(--color-navy) 10%, var(--color-surface)); }
+.workhours-theme-option:focus-visible,
+.workhours-theme-trigger:focus-visible { outline: 2px solid var(--color-navy); outline-offset: 2px; }
+.workhours-theme-swatches { display: flex; gap: 3px; flex-shrink: 0; }
+.workhours-theme-swatches i { display: block; width: 10px; height: 10px; border: 1px solid #75809755; border-radius: 50%; }
+.workhours-theme-check { margin-left: auto; flex-shrink: 0; color: var(--color-navy); }
+.workhours-theme-emblem { width: 34px; height: 34px; flex-shrink: 0; align-self: center; }
+
+/* 晴空糖果：蓝天、果冻色便签与带虚线票根的下班卡。 */
+:root[data-theme='candy'] {
+  color-scheme: light;
+  --color-paper: #edf6ff;
+  --color-surface: #ffffff;
+  --color-ink: #26365b;
+  --color-ink-soft: #566788;
+  --color-rule: #cfdef2;
+  --color-navy: #4564d6;
+  --color-plum: #b64c70;
+  --color-ochre: #956514;
+  --style-radius: 20px;
+  --style-shadow: 0 5px 0 #d5e5f5;
+  --style-primary-ink: #ffffff;
+  --style-selection: #e9edff;
+  --style-note: #edf1ff;
+  --chart-positive: #4564d6;
+  --chart-negative: #be547c;
+  --chart-muted: #566788;
+  --chart-rule: #cfdef2;
+}
+:root[data-theme='candy'] body {
+  background-image: radial-gradient(ellipse at 6% 3%, #fff3c8 0, transparent 30%), radial-gradient(ellipse at 94% 9%, #ffe4ee 0, transparent 29%);
+  background-attachment: fixed;
+}
+:root[data-theme='candy'] .workhours-header { background: #ffffffd9; border-bottom: 2px solid #d9e6f8; }
+:root[data-theme='candy'] .workhours-summary-grid > div:nth-child(1) { background: #e9f2ff; border-color: #c7d9f8; }
+:root[data-theme='candy'] .workhours-summary-grid > div:nth-child(2) { background: #eaf8f1; border-color: #c9e9d9; }
+:root[data-theme='candy'] .workhours-summary-grid > div:nth-child(3) { background: #fff0f5; border-color: #f1d0dc; }
+:root[data-theme='candy'] .workhours-summary-grid > div:nth-child(4) { background: #fff8de; border-color: #ecdfaf; }
+:root[data-theme='candy'] .workhours-calendar-heading {
+  background: linear-gradient(110deg, #f0f5ff, #fff 68%);
+  border-bottom: 1px solid var(--color-rule);
+}
+:root[data-theme='candy'] .workhours-day-prediction {
+  border: 1px dashed #a9b9ed;
+  background: var(--style-note);
+  box-shadow: inset 0 0 0 5px #ffffff80;
+}
+:root[data-theme='candy'] .workhours-day-today { border-color: #e8cf88; background: #fff3c8; color: #7d5b16; border-radius: 20px; }
+:root[data-theme='candy'] .workhours-calendar-badge { border-radius: 6px; }
+
+/* 星际软糖：深蓝星空、紫色星球和青粉色光边，数据面板保持实色可读。 */
+:root[data-theme='space'] {
+  color-scheme: dark;
+  --color-paper: #10162b;
+  --color-surface: #1b2540;
+  --color-ink: #eef3ff;
+  --color-ink-soft: #b2c1df;
+  --color-rule: #3b4c6d;
+  --color-navy: #75e2ed;
+  --color-plum: #ffa6c9;
+  --color-ochre: #ffda8b;
+  --style-radius: 18px;
+  --style-shadow: 0 14px 32px #03081950;
+  --style-primary-ink: #102331;
+  --style-selection: #243d55;
+  --style-note: #24324e;
+  --chart-positive: #75e2ed;
+  --chart-negative: #ffa6c9;
+  --chart-muted: #b2c1df;
+  --chart-rule: #3b4c6d;
+}
+:root[data-theme='space'] body {
+  background-image: radial-gradient(ellipse at 10% 0, #53478455, transparent 44%), radial-gradient(ellipse at 100% 55%, #24596a50, transparent 40%);
+  background-attachment: fixed;
+}
+:root[data-theme='space'] .workhours-app { isolation: isolate; position: relative; }
+:root[data-theme='space'] .workhours-app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .35;
+  background-image: radial-gradient(circle at 24px 46px, #c8d7ff 1px, transparent 1.6px), radial-gradient(circle at 103px 19px, #b5a5ff 1px, transparent 1.5px);
+  background-size: 173px 137px, 241px 193px;
+}
+:root[data-theme='space'] .workhours-header { background: #11182cdd; border-bottom-color: #506282; backdrop-filter: blur(12px); }
+:root[data-theme='space'] .workhours-title { color: #f2eaff; }
+:root[data-theme='space'] .workhours-summary-grid > div:nth-child(1) { border-top: 3px solid #75e2ed; }
+:root[data-theme='space'] .workhours-summary-grid > div:nth-child(2) { border-top: 3px solid #b5a5ff; }
+:root[data-theme='space'] .workhours-summary-grid > div:nth-child(3) { border-top: 3px solid #ffa6c9; }
+:root[data-theme='space'] .workhours-summary-grid > div:nth-child(4) { border-top: 3px solid #ffda8b; }
+:root[data-theme='space'] .workhours-calendar-heading { background: linear-gradient(110deg, #293151, #1b2540 75%); }
+:root[data-theme='space'] .workhours-day-panel { border-color: #655e93; position: relative; overflow: hidden; }
+@media (min-width: 1280px) {
+  :root[data-theme='space'] .workhours-day-panel { position: sticky; }
+}
+:root[data-theme='space'] .workhours-day-panel::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: -45px;
+  width: 125px;
+  height: 44px;
+  border: 1px solid #b5a5ff50;
+  border-radius: 50%;
+  transform: rotate(-28deg);
+  pointer-events: none;
+}
+:root[data-theme='space'] .workhours-day-prediction { border: 1px solid #617d96; background: linear-gradient(120deg, #253b52, #2d2b48); }
+:root[data-theme='space'] .workhours-day-prediction-time { color: #a2edf4; }
+:root[data-theme='space'] .workhours-day-today { background: #342f50; color: #e7d8ff; border-color: #6f6395; border-radius: 20px; }
+:root[data-theme='space'] .workhours-theme-menu { box-shadow: 0 18px 60px #0008; border-color: #627294; }
+:root[data-theme='space'] .workhours-entry-backdrop { background: #050919b8; }
+:root[data-theme='space'] .workhours-weather-icon { filter: drop-shadow(0 1px 2px #0004); }
+
+/* 奶油手账：纸张、胶带、柔和便签和装订边，不旋转或模糊实际数字。 */
+:root[data-theme='journal'] {
+  color-scheme: light;
+  --color-paper: #fff8ea;
+  --color-surface: #fffdf6;
+  --color-ink: #453f35;
+  --color-ink-soft: #736854;
+  --color-rule: #d7c8ad;
+  --color-navy: #47765f;
+  --color-plum: #ae554b;
+  --color-ochre: #88631d;
+  --style-radius: 12px 6px 15px 8px;
+  --style-shadow: 3px 4px 0 #e7d9c2;
+  --style-primary-ink: #ffffff;
+  --style-selection: #edf3e6;
+  --style-note: #f1f4e8;
+  --chart-positive: #47765f;
+  --chart-negative: #ae554b;
+  --chart-muted: #736854;
+  --chart-rule: #e2d6c1;
+}
+:root[data-theme='journal'] body { background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, #dbc9aa38 27px, #dbc9aa38 28px); }
+:root[data-theme='journal'] .workhours-header { background: #fffdf6f0; border-bottom: 1px dashed #b9a886; }
+:root[data-theme='journal'] .workhours-summary-grid > div { position: relative; }
+:root[data-theme='journal'] .workhours-summary-grid > div::before {
+  content: '';
+  position: absolute;
+  width: 52px;
+  height: 11px;
+  top: -6px;
+  left: 22px;
+  background: #e7ac8b99;
+  border-inline: 1px dashed #b4846699;
+  transform: rotate(-3deg);
+}
+:root[data-theme='journal'] .workhours-summary-grid > div:nth-child(1) { background: #f4f0d9; }
+:root[data-theme='journal'] .workhours-summary-grid > div:nth-child(2) { background: #eef4e7; }
+:root[data-theme='journal'] .workhours-summary-grid > div:nth-child(3) { background: #fff0e5; }
+:root[data-theme='journal'] .workhours-summary-grid > div:nth-child(4) { background: #fffaf0; }
+:root[data-theme='journal'] .workhours-summary-grid > div:nth-child(even)::before { background: #aec9b299; transform: rotate(3deg); }
+:root[data-theme='journal'] .workhours-calendar-heading { background: #f9f1df; border-bottom: 1px dashed #c7b897; }
+:root[data-theme='journal'] .workhours-calendar--desktop { border-left: 4px solid #c5b49a; }
+:root[data-theme='journal'] .workhours-day-panel { border-top: 5px solid #d4bc92; }
+:root[data-theme='journal'] .workhours-day-prediction { border: 1px dashed #a8b495; background: var(--style-note); }
+:root[data-theme='journal'] .workhours-day-today { background: #fff0d2; color: #7a5e20; border: 1px dashed #b59a61; }
+:root[data-theme='journal'] .workhours-section-title { font-weight: 650; }
+
+/* 三个新主题共享尺寸规则，原来的三个主题保持原布局。 */
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-brand { align-items: center; }
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-summary-grid {
+  gap: 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-summary-grid > div {
+  padding: 18px 22px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--style-radius);
+  background-color: var(--color-surface);
+  box-shadow: var(--style-shadow);
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-calendar--desktop, .workhours-day-panel, .workhours-content > .workhours-trend, .workhours-content > details) {
+  border-radius: var(--style-radius);
+  box-shadow: var(--style-shadow);
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-day-prediction {
+  padding: 17px;
+  border-radius: 14px;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-day-punches > div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-navy) 7%, var(--color-surface));
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-calendar-cell[aria-pressed='true'] { background: var(--style-selection); }
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-calendar-cell:focus-visible { outline: 2px solid var(--color-navy); outline-offset: -3px; }
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-primary-action, .workhours-day-edit) {
+  background: var(--color-navy);
+  color: var(--style-primary-ink);
+  border-color: var(--color-navy);
+  border-radius: 12px;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-action, .workhours-secondary-action) {
+  border-radius: 12px;
+  background: var(--color-surface);
+  border-color: var(--color-rule);
+  color: var(--color-ink-soft);
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-action, .workhours-primary-action, .workhours-secondary-action) {
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-action, .workhours-primary-action, .workhours-secondary-action):not(:disabled):hover {
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-navy) 22%, transparent);
+  transform: translateY(-1px);
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-action, .workhours-primary-action, .workhours-secondary-action):not(:disabled):active { transform: translateY(1px); }
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-entry-modal, .workhours-time-popover, .workhours-chart-tooltip) {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-rule);
+  border-radius: var(--style-radius);
+  box-shadow: var(--style-shadow), 0 18px 50px #10203035;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-time-input, input[type='date'], select) {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border-color: var(--color-rule);
+  border-radius: 8px;
+}
+:root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) .workhours-entry-preview {
+  padding: 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: 12px;
+  background: var(--style-note);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:is([data-theme='candy'], [data-theme='space'], [data-theme='journal']) :is(.workhours-action, .workhours-primary-action, .workhours-secondary-action) { transition: none; transform: none !important; }
+}

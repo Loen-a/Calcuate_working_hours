@@ -64,18 +64,19 @@ def test_complete_round_trip_preserves_punches_leave_and_all_settings(tmp_path):
     assert destination.get_entry(date(2026, 9, 2)).end == time(6)
 
 
-def test_v3_classic_theme_round_trip_and_reopen_preserve_all_business_data(tmp_path):
+@pytest.mark.parametrize('theme', ['cool', 'teal', 'classic', 'candy', 'space', 'journal'])
+def test_v3_theme_round_trip_and_reopen_preserve_all_business_data(tmp_path, theme):
     database = tmp_path / "classic.sqlite3"
     source = WorkHoursStore(database)
     backup = complete_backup()
-    backup["settings"]["theme"] = "classic"
+    backup["settings"]["theme"] = theme
     restore_backup(source, backup)
 
     expected = copy.deepcopy(backup)
     expected.pop("exportedAt")
     assert snapshot(source) == expected
     reopened = WorkHoursStore(database)
-    assert reopened.get_theme() == "classic"
+    assert reopened.get_theme() == theme
     assert snapshot(reopened) == expected
 
     destination = WorkHoursStore(tmp_path / "classic-restored.sqlite3")
@@ -98,14 +99,15 @@ def test_v1_import_preserves_current_classic_theme_and_main_settings(tmp_path):
     assert snapshot(store) == expected
 
 
-def test_v2_classic_theme_is_rejected_atomically(tmp_path):
+@pytest.mark.parametrize('theme', ['classic', 'candy', 'space', 'journal'])
+def test_v2_unsupported_theme_is_rejected_atomically(tmp_path, theme):
     store = WorkHoursStore(tmp_path / "unsupported-legacy-theme.sqlite3")
     restore_backup(store, complete_backup())
     before = snapshot(store)
     with pytest.raises(InvalidBackup, match="theme"):
         restore_backup(store, {
             "version": 2, "exportedAt": "2026-09-08T00:00:00Z",
-            "entries": {}, "preferences": {"theme": "classic"}, "holidayCache": {},
+            "entries": {}, "preferences": {"theme": theme}, "holidayCache": {},
         })
     assert snapshot(store) == before
 

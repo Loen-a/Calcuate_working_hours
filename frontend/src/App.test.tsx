@@ -214,16 +214,24 @@ function mockDesktopViewport(initialDesktop: boolean) {
   return (next: boolean) => { desktop = next; listeners.forEach(listener => listener()) }
 }
 
-it('cycles the desktop theme through cool, teal and classic using persisted responses', async () => {
+it('saves the chosen style through the menu without cycling on the trigger', async () => {
   mockDesktopViewport(true)
   dashboard.theme = 'cool'
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: '冷色' }))
-  fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
-  fireEvent.click(await screen.findByRole('button', { name: '经典绿' }))
-  expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
+  let previous = '冷色'
+  const choices = [['candy', '晴空糖果'], ['space', '星际软糖'], ['journal', '奶油手账'], ['teal', '青绿'], ['classic', '经典绿'], ['cool', '冷色']]
+  for (const [id, label] of choices) {
+    const count = requests.filter(request => request.path === '/api/settings').length
+    fireEvent.click(await screen.findByRole('button', { name: previous }))
+    expect(requests.filter(request => request.path === '/api/settings')).toHaveLength(count)
+    fireEvent.click(screen.getByRole('menuitemradio', { name: label }))
+    expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
+    expect(dashboard.theme).toBe(id)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    previous = label
+  }
   expect(requests.filter(request => request.path === '/api/settings').map(request => JSON.parse(request.init!.body as string).theme))
-    .toEqual(['teal', 'classic', 'cool'])
+    .toEqual(choices.map(([id]) => id))
 })
 
 
@@ -233,6 +241,7 @@ it('keeps the previous theme visible when saving classic theme fails', async () 
   settingsError = '主题保存失败，请重试'
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
+  fireEvent.click(screen.getByRole('menuitemradio', { name: '经典绿' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('主题保存失败，请重试')
   expect(screen.getByRole('button', { name: '青绿' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()

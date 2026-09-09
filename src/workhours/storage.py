@@ -19,6 +19,7 @@ from workhours.domain import (
 
 
 _INTERVALS_INITIALIZED_KEY = "non_working_intervals_initialized"
+THEMES = ("cool", "teal", "classic", "candy", "space", "journal")
 
 
 class WorkHoursStore:
@@ -41,8 +42,8 @@ class WorkHoursStore:
         return self._get_setting("theme", "cool")
 
     def set_theme(self, theme: str) -> None:
-        if theme not in ("cool", "teal", "classic"):
-            raise ValueError("Theme must be cool, teal or classic.")
+        if theme not in THEMES:
+            raise ValueError("Unsupported interface theme.")
         self._set_setting("theme", theme)
 
     def save_entry(self, entry: WorkEntry) -> None:

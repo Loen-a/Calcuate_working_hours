@@ -1,4 +1,4 @@
-export type Theme = 'cool' | 'teal' | 'classic'
+export type Theme = 'cool' | 'teal' | 'classic' | 'candy' | 'space' | 'journal'
 export type Period = 'week' | 'month'
 export type CalendarKind = 'holiday' | 'workday'
 export interface Entry { start_time: string | null; end_time: string | null }

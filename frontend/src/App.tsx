@@ -100,7 +100,6 @@ export default function App() {
   if (!data) return <div className="min-h-screen grid place-items-center">正在连接本地数据库…</div>
   const busy = busyKind !== null
   const visibleTheme = data.theme
-  const nextTheme = visibleTheme === 'cool' ? 'teal' : visibleTheme === 'teal' ? 'classic' : 'cool'
   const day = modalDate ? data.days.find(day => day.date === modalDate) : null
   const selectedDay = data.days.find(day => day.date === data.selected_date)
   const { holiday_status: holiday, forecast } = data
@@ -110,7 +109,7 @@ export default function App() {
       <Header date={data.selected_date} theme={visibleTheme} busy={busy} importBusy={busyKind === 'import'}
         onPrev={() => void navigate(shiftMonth(data.selected_date, -1))} onNext={() => void navigate(shiftMonth(data.selected_date, 1))}
         onToday={() => void navigate(data.today)} onExport={api.downloadBackup} onImport={file => void handleImport(file)}
-        onThemeToggle={() => { void mutate('theme', () => api.putSettings({ theme: nextTheme })).catch(error => setError('主题保存失败：' + messageOf(error))) }} />
+        onThemeSelect={theme => { void mutate('theme', () => api.putSettings({ theme })).catch(error => setError('主题保存失败：' + messageOf(error))) }} />
       <main className="workhours-content max-w-5xl mx-auto px-8 py-12" aria-busy={busy}>
         {error && <p role="alert" className="mb-5 p-3 bg-plum/10 border border-plum/30 rounded-sm text-plum text-[13px]">{error}</p>}
         {notice && <p role="status" className="mb-5 p-3 bg-navy/10 border border-navy/30 rounded-sm text-navy text-[13px]">{notice}</p>}

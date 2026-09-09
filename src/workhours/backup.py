@@ -7,7 +7,7 @@ import re
 from datetime import date, datetime, timezone
 from typing import Any
 
-from workhours.storage import WorkHoursStore
+from workhours.storage import THEMES, WorkHoursStore
 
 
 class InvalidBackup(ValueError):
@@ -330,7 +330,7 @@ def _validate_backup(raw: object) -> dict:
         settings = _fields(value["preferences"], {"theme"}, "preferences")
 
     if version >= 2:
-        allowed_themes = ("cool", "teal", "classic") if version == 3 else ("cool", "teal")
+        allowed_themes = THEMES if version == 3 else ("cool", "teal")
         if settings["theme"] not in allowed_themes:
             raise InvalidBackup(f"theme 必须是 {'、'.join(allowed_themes)} 之一。")
         result["settings"] = dict(settings)

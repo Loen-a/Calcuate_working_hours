@@ -12,6 +12,7 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from workhours.backup import build_backup, restore_backup
 from workhours.domain import DayOverride, NonWorkingInterval, PeriodMode, WorkEntry
+from workhours.storage import THEMES
 from workhours.web import (
     _build_dashboard, _holiday_result, _preview_payload, _record_clock,
 )
@@ -246,8 +247,8 @@ def register_api(app, store, today_provider, now_provider) -> None:
             raise ValueError("请选择需要修改的设置")
         if "period" in body and body["period"] not in ("week", "month"):
             raise ValueError("统计周期只能为 week 或 month")
-        if "theme" in body and body["theme"] not in ("cool", "teal", "classic"):
-            raise ValueError("主题只能为 cool、teal 或 classic")
+        if "theme" in body and body["theme"] not in THEMES:
+            raise ValueError("不支持的界面风格，请重新选择。")
         if "period" in body:
             store.set_period(PeriodMode(body["period"]))
         if "theme" in body:
