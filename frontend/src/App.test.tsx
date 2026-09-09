@@ -59,6 +59,11 @@ beforeEach(() => {
       forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
       fetched_at: '2026-09-08T00:00:00+00:00', warning: null, days: {},
     })
+    if (path === '/api/air-quality') return json({
+      city: '杭州', timezone: 'Asia/Shanghai', standard: 'US', month: new URL(input, window.location.origin).searchParams.get('month'),
+      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
+      fetched_at: '2026-09-08T00:00:00Z', warning: null, days: {},
+    })
     if (path === '/api/settings' && init?.method === 'PUT') {
       if (settingsError) return json({ error: settingsError }, 400)
       const settings = JSON.parse(init.body as string)
@@ -324,7 +329,7 @@ it('does not request or display weather on mobile', async () => {
   mockDesktopViewport(false)
   render(<App />)
   await screen.findByText('Workhours')
-  expect(requests.some(request => request.path === '/api/weather')).toBe(false)
+  expect(requests.some(request => request.path === '/api/weather' || request.path === '/api/air-quality')).toBe(false)
   expect(screen.queryByText('杭州')).not.toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Open-Meteo' })).not.toBeInTheDocument()
 })

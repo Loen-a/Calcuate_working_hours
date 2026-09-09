@@ -1,10 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { getWeather } from './api'
-import { useWeather } from './useWeather'
-import type { WeatherResult } from './types'
+import { getAirQuality, getWeather } from './api'
+import { useAirQuality, useWeather } from './useWeather'
+import type { AirQualityResult, WeatherResult } from './types'
 
-vi.mock('./api', () => ({ getWeather: vi.fn() }))
+vi.mock('./api', () => ({ getWeather: vi.fn(), getAirQuality: vi.fn() }))
 const resultFor = (month: string): WeatherResult => ({
   city: '杭州', timezone: 'Asia/Shanghai', month, forecast_start: '2026-09-09', forecast_end: '2026-09-15',
   source: 'cache', stale: false, fetched_at: '2026-09-09T01:00:00Z', warning: null,
@@ -18,6 +18,37 @@ function deferred<T>() {
 beforeEach(() => {
   vi.mocked(getWeather).mockReset().mockImplementation(async month => resultFor(month))
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  vi.mocked(getAirQuality).mockReset()
+})
+
+it('shows weather while air quality is pending and keeps it after air quality fails', async () => {
+  let reject!: (error: Error) => void
+  vi.mocked(getAirQuality).mockReturnValue(new Promise((_resolve, fail) => { reject = fail }))
+  const { result } = renderHook(() => ({ weather: useWeather('2026-09', true), air: useAirQuality('2026-09', true) }))
+  await waitFor(() => expect(result.current.weather.data?.days['2026-09-09']).toBeDefined())
+  expect(result.current.air.loading).toBe(true)
+  await act(async () => reject(new Error('空气接口离线')))
+  expect(result.current.air.error).toBe('空气接口离线')
+  expect(result.current.weather.data?.days['2026-09-09']).toBeDefined()
+})
+
+it('cancels obsolete air quality and clears it on the next Hangzhou day', async () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-09-09T15:40:00Z'))
+  const previous = deferred<AirQualityResult>()
+  const current = { ...resultFor('2026-10'), standard: 'US' as const, days: {} }
+  vi.mocked(getAirQuality).mockReturnValueOnce(previous.promise).mockResolvedValueOnce(current)
+    .mockReturnValueOnce(new Promise(() => undefined))
+  const { result, rerender } = renderHook(({ month }) => useAirQuality(month, true), { initialProps: { month: '2026-09' } })
+  const signal = vi.mocked(getAirQuality).mock.calls[0][1]!
+  rerender({ month: '2026-10' })
+  await act(async () => undefined)
+  expect(signal.aborted).toBe(true)
+  await act(async () => previous.resolve({ ...current, month: '2026-09' }))
+  expect(result.current.data?.month).toBe('2026-10')
+  await act(async () => { await vi.advanceTimersByTimeAsync(20 * 60 * 1000) })
+  expect(getAirQuality).toHaveBeenCalledTimes(3)
+  expect(result.current.data).toBeNull()
 })
 afterEach(() => vi.useRealTimers())
 

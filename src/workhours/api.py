@@ -174,6 +174,24 @@ def register_api(app, store, today_provider, now_provider) -> None:
         response.headers["Cache-Control"] = "no-store"
         return response
 
+    @app.get("/api/air-quality")
+    def get_calendar_air_quality():
+        from workhours.air_quality import get_air_quality
+
+        raw_month = request.args.get("month", "")
+        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", raw_month):
+            raise ValueError("月份须使用 YYYY-MM 格式")
+        month = _date(raw_month + "-01")
+        clock = app.config.get("WEATHER_NOW_PROVIDER")
+        result = get_air_quality(
+            store, month, now=clock() if clock else None,
+            allow_network=app.config.get("WEATHER_NETWORK_ENABLED", True) and app.config.get("AIR_QUALITY_NETWORK_ENABLED", True),
+            fetcher=app.config.get("AIR_QUALITY_FETCHER"),
+        )
+        response = jsonify(asdict(result))
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     @app.put("/api/entries/<work_date>")
     def put_entry(work_date):
         work_date = _date(work_date)

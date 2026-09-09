@@ -65,6 +65,7 @@ export interface DayWeather {
   icon: WeatherIcon
   temperature_min: number
   temperature_max: number
+  humidity_mean?: number | null
 }
 export interface WeatherResult {
   city: string
@@ -83,3 +84,11 @@ export interface WeatherState {
   loading: boolean
   error: string | null
 }
+
+export type AirQualityCategory = 'good' | 'moderate' | 'sensitive' | 'unhealthy' | 'very-unhealthy' | 'hazardous'
+export interface DayAirQuality { aqi_max: number; category: AirQualityCategory; label: string }
+export interface AirQualityResult extends Omit<WeatherResult, 'days'> {
+  standard: 'US'
+  days: Record<string, DayAirQuality>
+}
+export interface AirQualityState { data: AirQualityResult | null; loading: boolean; error: string | null }

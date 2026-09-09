@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { DayWeather, WeatherIcon } from '../lib/types'
+import type { DayAirQuality, DayWeather, WeatherIcon } from '../lib/types'
 
 const colors = {
   sun: '#FBBF24',
@@ -23,12 +23,23 @@ const icons: Record<WeatherIcon, ReactNode> = {
   thunderstorm: <><path d={cloudPath} fill={colors.stormCloud} stroke={colors.cloudOutline} /><path d="M13 14 9 19h4l-2 4 6-7h-4l1-2Z" fill={colors.sun} stroke={colors.sunOutline} /></>,
 }
 
-export default function WeatherDay({ weather }: { weather?: DayWeather | null }) {
+export default function WeatherDay({ weather, airQuality, airLoading = false, airStale = false, id }: {
+  weather?: DayWeather | null; airQuality?: DayAirQuality; airLoading?: boolean; airStale?: boolean; id?: string
+}) {
   if (!weather || !Object.prototype.hasOwnProperty.call(icons, weather.icon) || typeof weather.description !== 'string'
     || !Number.isFinite(weather.temperature_min) || !Number.isFinite(weather.temperature_max)) return null
-  const label = `${weather.description}，最低 ${weather.temperature_min}°C，最高 ${weather.temperature_max}°C`
-  return <span className="workhours-weather-day" title={label} role="img" aria-label={label}>
-    <svg className="workhours-weather-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icons[weather.icon]}</svg>
-    <span className="workhours-weather-temperature">{weather.temperature_min}°/{weather.temperature_max}°</span>
+  const humidity = typeof weather.humidity_mean === 'number' && Number.isFinite(weather.humidity_mean)
+    && weather.humidity_mean >= 0 && weather.humidity_mean <= 100 ? weather.humidity_mean : null
+  const air = airQuality && Number.isInteger(airQuality.aqi_max) && airQuality.aqi_max >= 0 ? airQuality : null
+  const airText = air ? `${air.aqi_max}（${air.label}）${airStale ? '，缓存待更新' : ''}`
+    : airLoading ? '加载中' : '暂无完整日预报'
+  const label = `${weather.description}，最低 ${weather.temperature_min}°C，最高 ${weather.temperature_max}°C；日均相对湿度：${humidity === null ? '暂无' : humidity + '%'}；AQI（美标）日最高预报：${airText}。按杭州时间完整24小时预报计算。`
+  return <span id={id} className="workhours-weather-day" title={label} role="img" aria-label={label}>
+    <svg className="workhours-weather-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icons[weather.icon]}</svg>
+    <span className="workhours-weather-readings">
+      <span className="workhours-weather-temperature">{weather.temperature_min}°/{weather.temperature_max}°</span>
+      <span className="workhours-weather-detail">湿度 {humidity === null ? '暂无' : Math.round(humidity) + '%'}</span>
+      <span className="workhours-weather-detail">AQI(美) <strong className="workhours-weather-aqi" data-category={air?.category}>{air ? air.aqi_max : airLoading ? '…' : '暂无'}</strong></span>
+    </span>
   </span>
 }

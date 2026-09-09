@@ -1,15 +1,28 @@
 import { useEffect, useState } from 'react'
-import { getWeather } from './api'
-import type { WeatherState } from './types'
+import { getAirQuality, getWeather } from './api'
+import type { AirQualityState, WeatherState } from './types'
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 const HANGZHOU_OFFSET = 8 * HOUR
 const hangzhouDay = (timestamp: number) => Math.floor((timestamp + HANGZHOU_OFFSET) / DAY)
-const empty: WeatherState = { data: null, loading: false, error: null }
+const empty = { data: null, loading: false, error: null }
+
+interface Forecast { month: string; forecast_start: string; forecast_end: string; days: Record<string, unknown> }
+interface ForecastState<T> { data: T | null; loading: boolean; error: string | null }
 
 export function useWeather(month: string | null, enabled: boolean): WeatherState {
-  const [state, setState] = useState<WeatherState & { month: string | null }>({ ...empty, month: null })
+  return useForecast(month, enabled, getWeather)
+}
+
+export function useAirQuality(month: string | null, enabled: boolean): AirQualityState {
+  return useForecast(month, enabled, getAirQuality)
+}
+
+// 两个接口各自维护结果和刷新时钟；AQI 延迟、失败不会清除已经显示的天气。
+function useForecast<T extends Forecast>(month: string | null, enabled: boolean,
+  fetchForecast: (month: string, signal?: AbortSignal) => Promise<T>): ForecastState<T> {
+  const [state, setState] = useState<ForecastState<T> & { month: string | null }>({ ...empty, month: null })
   useEffect(() => {
     if (!enabled || !month) {
       setState({ ...empty, month: null })
@@ -38,7 +51,7 @@ export function useWeather(month: string | null, enabled: boolean): WeatherState
       scheduleNext()
       setState({ month, data: null, loading: true, error: null })
       try {
-        const data = await getWeather(month, request.signal)
+        const data = await fetchForecast(month, request.signal)
         if (!alive || request.signal.aborted) return
         if (!data || data.month !== month || !data.days || typeof data.days !== 'object'
           || typeof data.forecast_start !== 'string' || typeof data.forecast_end !== 'string') {
@@ -68,7 +81,7 @@ export function useWeather(month: string | null, enabled: boolean): WeatherState
       window.clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [month, enabled])
+  }, [month, enabled, fetchForecast])
 
   // A month change must hide the previous result before its replacement effect runs.
   return enabled && month && state.month === month ? state : empty

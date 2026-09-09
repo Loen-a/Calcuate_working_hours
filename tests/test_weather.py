@@ -49,13 +49,14 @@ def test_fixed_hangzhou_request_and_normalized_data_persist_outside_business_bac
     assert result.fetched_at == "2026-09-09T01:00:00Z"
     assert result.days["2026-09-09"] == {
         "code": 0, "description": "晴", "icon": "clear", "temperature_min": 20.1, "temperature_max": 29,
+        "humidity_mean": None,
     }
     parsed = urlparse(calls[0])
     assert parsed.scheme == "https" and parsed.netloc == "api.open-meteo.com"
     query = parse_qs(parsed.query)
     assert query["latitude"] == ["30.29365"] and query["longitude"] == ["120.16142"]
     assert query["timezone"] == ["Asia/Shanghai"] and query["forecast_days"] == ["7"]
-    assert set(query["daily"][0].split(",")) == {"weather_code", "temperature_2m_min", "temperature_2m_max"}
+    assert set(query["daily"][0].split(",")) == {"weather_code", "temperature_2m_min", "temperature_2m_max", "relative_humidity_2m_mean"}
     reopened = WorkHoursStore(store.database_path)
     assert reopened.get_weather_cache(LOCATION_KEY) == (
         {"forecast_date": TODAY.isoformat(), "days": result.days}, result.fetched_at,
@@ -225,3 +226,26 @@ def test_default_fetcher_uses_five_second_timeout(store, monkeypatch):
     monkeypatch.setattr(weather, "urlopen", open_url)
     assert get_weather(store, TODAY, now=NOW).source == "remote"
     assert calls[0][1] == 5
+
+
+def test_daily_mean_humidity_is_optional_and_invalid_values_do_not_hide_weather(store):
+    raw = payload()
+    raw['daily']['relative_humidity_2m_mean'] = [72.4, 0, 100, None, 101, True, '65']
+    result = get_weather(store, TODAY, now=NOW, fetcher=lambda url: raw)
+    assert len(result.days) == 7
+    assert [day['humidity_mean'] for day in result.days.values()] == [72.4, 0, 100, None, None, None, None]
+    cached = get_weather(store, TODAY, now=NOW, fetcher=offline)
+    assert cached.source == 'cache' and cached.days == result.days
+
+
+def test_legacy_weather_cache_remains_usable_offline_but_refreshes_to_add_humidity(store):
+    original = get_weather(store, TODAY, now=NOW, fetcher=lambda url: payload())
+    legacy = {key: {k: v for k, v in value.items() if k != 'humidity_mean'} for key, value in original.days.items()}
+    store.set_weather_cache(LOCATION_KEY, {'forecast_date': TODAY.isoformat(), 'days': legacy}, original.fetched_at)
+    fallback = get_weather(store, TODAY, now=NOW, fetcher=offline)
+    assert fallback.source == 'cache' and fallback.stale and len(fallback.days) == 7
+    assert all(day['humidity_mean'] is None for day in fallback.days.values())
+    raw = payload()
+    raw['daily']['relative_humidity_2m_mean'] = [75] * 7
+    updated = get_weather(store, TODAY, now=NOW, fetcher=lambda url: raw)
+    assert updated.source == 'remote' and updated.days[TODAY.isoformat()]['humidity_mean'] == 75

@@ -3,7 +3,7 @@ import type { DashboardData } from './lib/types'
 import * as api from './lib/api'
 import { fmtMinutes, shiftMonth } from './lib/format'
 import { useAppliedTheme, useDesktopViewport } from './lib/useTheme'
-import { useWeather } from './lib/useWeather'
+import { useAirQuality, useWeather } from './lib/useWeather'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import TrendChart from './components/TrendChart'
@@ -26,6 +26,7 @@ export default function App() {
   useAppliedTheme(data?.theme || null)
   const desktop = useDesktopViewport()
   const weather = useWeather(data?.selected_date.slice(0, 7) || null, desktop && !fatal)
+  const airQuality = useAirQuality(data?.selected_date.slice(0, 7) || null, desktop && !fatal)
 
   const applyDashboard = (next: DashboardData) => {
     setData(next)
@@ -129,7 +130,7 @@ export default function App() {
           当前{data.settings.period === 'week' ? '周' : '月'}周期 {forecast.period_start} — {forecast.period_end} · 目标 {fmtMinutes(forecast.target_minutes)} · 已完成 {fmtMinutes(forecast.completed_minutes)} · 待完成 {fmtMinutes(forecast.remaining_target_minutes)}
         </p>
         {desktop ? <div className="workhours-workspace">
-          <Calendar selected={data.selected_date} today={data.today} days={data.days} busy={busy} desktop weather={weather} onPick={date => void navigate(date)} />
+          <Calendar selected={data.selected_date} today={data.today} days={data.days} busy={busy} desktop weather={weather} airQuality={airQuality} onPick={date => void navigate(date)} />
           {selectedDay && <SelectedDayPanel day={selectedDay} preview={data.selected_preview} today={data.today}
             busy={busy} onEdit={() => setModalDate(data.selected_date)} />}
         </div> : <>

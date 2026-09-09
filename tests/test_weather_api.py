@@ -72,3 +72,42 @@ def test_weather_outside_forecast_month_never_fetches(app):
     result = app.test_client().get('/api/weather?month=2026-08')
     assert result.status_code == 200 and result.json['days'] == {}
     assert result.json['source'] == 'unavailable'
+
+
+def test_humidity_and_air_quality_load_independently_without_changing_attendance(app):
+    client = app.test_client()
+    weather_calls, air_calls = [], []
+    raw = forecast()
+    raw['daily']['relative_humidity_2m_mean'] = [72.4] * 7
+    app.config['WEATHER_FETCHER'] = lambda url: (weather_calls.append(url), raw)[1]
+    start = datetime(2026, 9, 9)
+    air = {'timezone': 'Asia/Shanghai', 'hourly': {
+        'time': [(start + timedelta(hours=i)).isoformat(timespec='minutes') for i in range(168)],
+        'us_aqi': [48] * 120 + [None] * 48,
+    }}
+    app.config['AIR_QUALITY_FETCHER'] = lambda url: (air_calls.append(url), air)[1]
+    before = client.get('/api/dashboard').json
+    result = client.get('/api/weather?month=2026-09').json
+    assert result['days']['2026-09-09']['humidity_mean'] == 72.4
+    assert len(weather_calls) == 1 and not air_calls
+    result = client.get('/api/air-quality?month=2026-09')
+    assert result.status_code == 200 and result.headers['Cache-Control'] == 'no-store'
+    assert result.json['standard'] == 'US' and len(result.json['days']) == 5
+    assert result.json['days']['2026-09-09']['aqi_max'] == 48
+    assert len(weather_calls) == len(air_calls) == 1
+    assert client.get('/api/dashboard').json == before
+
+
+@pytest.mark.parametrize('query', ['', '?month=2026-13', '?month=2026-9', '?month=invalid'])
+def test_air_quality_rejects_invalid_month_without_fetching(app, query):
+    app.config['AIR_QUALITY_FETCHER'] = lambda url: (_ for _ in ()).throw(AssertionError('Unexpected network request'))
+    assert app.test_client().get('/api/air-quality' + query).status_code == 400
+
+
+def test_air_quality_unavailable_still_allows_entry_save(app):
+    app.config['AIR_QUALITY_FETCHER'] = lambda url: (_ for _ in ()).throw(OSError('offline'))
+    client = app.test_client()
+    result = client.get('/api/air-quality?month=2026-09')
+    assert result.status_code == 200 and result.json['days'] == {}
+    assert client.put('/api/entries/2026-09-09', json={'start_time': '08:00', 'end_time': None}).status_code == 200
+    assert client.get('/api/dashboard').json['selected_preview']['available']

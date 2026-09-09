@@ -147,7 +147,7 @@ it('shows provided PC weather without replacing leave/rest labels or adding a se
   const cell = within(screen.getByRole('button', { name: `选择 ${restDay.date}` }))
   expect(cell.getByText('休')).toBeInTheDocument()
   expect(cell.getByText('休息日')).toBeInTheDocument()
-  const forecast = cell.getByTitle('小雨，最低 23.4°C，最高 29.1°C')
+  const forecast = cell.getByTitle(/^小雨，最低 23.4°C，最高 29.1°C/)
   expect(forecast).not.toHaveAttribute('tabindex')
   fireEvent.click(forecast)
   expect(onPick).toHaveBeenCalledWith(restDay.date)

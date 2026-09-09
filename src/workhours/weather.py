@@ -20,7 +20,7 @@ TIMEZONE = "Asia/Shanghai"
 HANGZHOU_TZ = timezone(timedelta(hours=8))
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast?" + urlencode({
     "latitude": "30.29365", "longitude": "120.16142",
-    "daily": "weather_code,temperature_2m_min,temperature_2m_max",
+    "daily": "weather_code,temperature_2m_min,temperature_2m_max,relative_humidity_2m_mean",
     "forecast_days": 7, "timezone": TIMEZONE, "temperature_unit": "celsius",
 })
 
@@ -40,7 +40,7 @@ _CONDITIONS = {
     99: ("雷暴伴强冰雹", "thunderstorm"),
 }
 
-WeatherDays = dict[str, dict[str, str | int | float]]
+WeatherDays = dict[str, dict[str, str | int | float | None]]
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,16 @@ def _number(raw: object) -> int | float:
     return raw
 
 
-def _day(code: object, low: object, high: object) -> dict | None:
+def _humidity(raw: object) -> int | float | None:
+    # 湿度是补充信息；上游缺失或异常时保留已有的天气和温度。
+    try:
+        value = _number(raw)
+    except ValueError:
+        return None
+    return value if 0 <= value <= 100 else None
+
+
+def _day(code: object, low: object, high: object, humidity: object = None) -> dict | None:
     # Validate non-null values even when another observation is missing.
     if code is not None and (type(code) is not int or code not in _CONDITIONS):
         raise ValueError("天气代码不受支持。")
@@ -92,7 +101,7 @@ def _day(code: object, low: object, high: object) -> dict | None:
         return None
     description, icon = _CONDITIONS[code]
     return {"code": code, "description": description, "icon": icon,
-            "temperature_min": low, "temperature_max": high}
+            "temperature_min": low, "temperature_max": high, "humidity_mean": _humidity(humidity)}
 
 
 def _normalize(raw: object, forecast_date: date) -> WeatherDays:
@@ -114,10 +123,13 @@ def _normalize(raw: object, forecast_date: date) -> WeatherDays:
     expected = [forecast_date + timedelta(days=i) for i in range(7)]
     if dates != expected:
         raise ValueError("天气响应日期与杭州当前七天预报窗口不一致。")
+    humidity = daily.get("relative_humidity_2m_mean")
+    if not isinstance(humidity, list) or len(humidity) != 7 or units.get("relative_humidity_2m_mean", "%") != "%":
+        humidity = [None] * 7
     result = {}
     for index, forecast_day in enumerate(dates):
         value = _day(daily["weather_code"][index], daily["temperature_2m_min"][index],
-                     daily["temperature_2m_max"][index])
+                     daily["temperature_2m_max"][index], humidity[index])
         if value is not None:
             result[forecast_day.isoformat()] = value
     if not result:
@@ -143,15 +155,17 @@ def _read_cache(store: WorkHoursStore, now: datetime) -> tuple[WeatherDays, str,
             return None
         last = forecast_date + timedelta(days=6)
         validated = {}
+        legacy = False
         for key, item in days.items():
             work_date = _parse_date(key)
             if not forecast_date <= work_date <= last or not isinstance(item, dict):
                 return None
-            normalized = _day(item["code"], item["temperature_min"], item["temperature_max"])
-            if normalized is None or item != normalized:
+            normalized = _day(item["code"], item["temperature_min"], item["temperature_max"], item.get("humidity_mean"))
+            legacy = legacy or "humidity_mean" not in item
+            if normalized is None or {"humidity_mean": None, **item} != normalized:
                 return None
             validated[key] = normalized
-        fresh = forecast_date == now.date() and now - fetched < timedelta(hours=1)
+        fresh = not legacy and forecast_date == now.date() and now - fetched < timedelta(hours=1)
         return validated, stamp, fresh
     except (ValueError, TypeError, KeyError, OverflowError):
         # Cache contents are rebuildable and cannot prevent a new forecast.
