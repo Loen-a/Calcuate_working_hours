@@ -373,13 +373,6 @@
           <h2>预测与记录</h2>
           <div class="prediction-head-actions">
             <span>{{ forecast.workdays|length }} 个工作日</span>
-            <button
-              class="secondary-button mobile-table-toggle"
-              id="toggle-other-days"
-              type="button"
-              aria-controls="prediction-days"
-              aria-expanded="false"
-            >显示其他工作日</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -403,17 +396,17 @@
                 {% set is_selected_row = day == selected_date or (selected_date not in forecast.days and loop.first) %}
                 <tr
                   id="prediction-{{ day.isoformat() }}"
-                  class="prediction-row {{ 'is-selected-day' if is_selected_row else 'other-day' }}"
+                  class="prediction-row {{ 'is-selected-day' if is_selected_row else '' }}"
                   {% if is_selected_row %}aria-current="date"{% endif %}
                   data-work-date="{{ day.isoformat() }}"
                 >
-                  <td class="entry-date-cell" data-label="日期">
+                  <td class="entry-date-cell">
                     <form id="{{ form_id }}" method="post" action="{{ url_for('save_entry') }}"></form>
                     <input type="hidden" name="work_date" value="{{ day.isoformat() }}" form="{{ form_id }}">
                     <input type="hidden" name="return_target" value="prediction" form="{{ form_id }}">
                     {{ day.isoformat() }}
                   </td>
-                  <td data-label="上班">
+                  <td>
                     <input
                       class="table-input"
                       type="time"
@@ -425,11 +418,11 @@
                       data-work-date="{{ day.isoformat() }}"
                     >
                   </td>
-                  <td data-label="下班">
+                  <td>
                     <input class="table-input" type="time" name="end_time" value="{% if entry and entry.end %}{{ entry.end.strftime('%H:%M') }}{% endif %}" form="{{ form_id }}">
                   </td>
-                  <td data-label="有效工时">{{ item.actual_minutes|minutes }}</td>
-                  <td id="earliest-end-{{ day.isoformat() }}" class="earliest-end-cell" data-label="最早下班时间">
+                  <td>{{ item.actual_minutes|minutes }}</td>
+                  <td id="earliest-end-{{ day.isoformat() }}" class="earliest-end-cell">
                     {% if item.suggested_end %}
                       <span class="earliest-end-value">{% if item.suggested_end_day_offset == 1 %}次日 {% elif item.suggested_end_day_offset > 1 %}{{ item.suggested_end_day_offset }}天后 {% endif %}{{ item.suggested_end.strftime('%H:%M') }}</span>
                     {% else %}
@@ -438,7 +431,6 @@
                   </td>
                   <td
                     class="balance-cell"
-                    data-label="累计余额"
                     data-daily-balance-minutes="{% if item.daily_balance_minutes is not none %}{{ item.daily_balance_minutes }}{% endif %}"
                     data-cumulative-balance-minutes="{% if item.cumulative_balance_minutes is not none %}{{ item.cumulative_balance_minutes }}{% endif %}"
                     data-balance-before-minutes="{{ item.balance_before_minutes }}"
@@ -456,7 +448,7 @@
                       <span class="balance-empty">-</span>
                     {% endif %}
                   </td>
-                  <td data-label="状态">
+                  <td>
                     <span class="badge {% if item.compliant is sameas false or item.reason == 'missing_entry' or (item.required_minutes is not none and item.required_minutes > settings.target_minutes_per_day) %}bad{% elif item.reason == 'goal_met_minimum' or (item.required_minutes is not none and item.required_minutes < settings.target_minutes_per_day) %}good{% endif %}">
                       {% if item.required_minutes is not none %}
                         {{ item.required_minutes|earliest_reason(settings.target_minutes_per_day) }}
@@ -465,7 +457,7 @@
                       {% endif %}
                     </span>
                   </td>
-                  <td data-label="操作">
+                  <td>
                     <button class="small-button" type="submit" form="{{ form_id }}">保存</button>
                   </td>
                 </tr>

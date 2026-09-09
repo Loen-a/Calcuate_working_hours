@@ -66,7 +66,7 @@ export default function EntryModal({ day, preview, externalBusy, onClose, onSave
   }
   return (
     <div className="fixed inset-0 bg-ink/30 flex items-center justify-center z-20 px-3 py-4" onClick={() => { if (!busy) onClose() }}>
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="entry-title" tabIndex={-1} className="workhours-entry-modal bg-paper border border-rule rounded-sm p-5 sm:p-8 w-full max-w-[440px] max-h-[92dvh] overflow-y-auto shadow-sm outline-none" onClick={event => event.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="entry-title" tabIndex={-1} className="workhours-entry-modal bg-paper border border-rule rounded-sm p-8 w-full max-w-[440px] max-h-[92dvh] overflow-y-auto shadow-sm outline-none" onClick={event => event.stopPropagation()}>
         <div className="flex items-baseline justify-between mb-5 gap-3">
           <h3 id="entry-title" className="workhours-section-title font-display text-[26px] tracking-tight">{day.date}</h3>
           <span className="workhours-meta text-[12px] tracking-[0.2em] text-ink-soft font-mono">Entry</span>

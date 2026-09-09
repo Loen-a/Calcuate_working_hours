@@ -29,15 +29,15 @@ export default function Calendar({ selected, today, days, busy, onPick }: Props)
               const rest = day && !day.is_workday
               return <td key={cell.date} className={`border border-rule p-0 align-top ${cell.other ? 'bg-rule/30' : rest ? 'bg-plum/[0.04]' : ''}`}>
                 <button type="button" aria-label={`编辑 ${cell.date}`} aria-current={cell.date === today ? 'date' : undefined} disabled={busy} onClick={() => onPick(cell.date)}
-                  className={`relative w-full min-h-[112px] sm:min-h-[120px] p-1.5 sm:p-2.5 text-left align-top hover:bg-surface transition-colors disabled:cursor-wait ${cell.date === selected ? 'outline outline-2 outline-navy -outline-offset-2' : cell.date === today ? 'outline outline-1 outline-ink -outline-offset-2' : ''}`}>
+                  className={`relative w-full min-h-[120px] p-2.5 text-left align-top hover:bg-surface transition-colors disabled:cursor-wait ${cell.date === selected ? 'outline outline-2 outline-navy -outline-offset-2' : cell.date === today ? 'outline outline-1 outline-ink -outline-offset-2' : ''}`}>
                   <div className="flex items-baseline justify-between gap-0.5">
-                    <span className={`workhours-calendar-date font-display text-[19px] sm:text-[20px] tabular-nums leading-none ${cell.other ? 'text-ink-soft/50' : rest ? 'text-plum' : 'text-ink'} ${cell.date === today ? 'font-semibold' : ''}`}>{cell.day}</span>
+                    <span className={`workhours-calendar-date font-display text-[20px] tabular-nums leading-none ${cell.other ? 'text-ink-soft/50' : rest ? 'text-plum' : 'text-ink'} ${cell.date === today ? 'font-semibold' : ''}`}>{cell.day}</span>
                     {day?.leave ? <span className="workhours-calendar-badge text-[11px] px-1 py-px bg-ochre/10 text-ochre rounded-sm">假</span>
                       : rest ? <span className="workhours-calendar-badge text-[11px] px-1 py-px bg-plum/10 text-plum rounded-sm">休</span>
                         : day?.manual_override === 'workday' ? <span className="workhours-calendar-badge text-[11px] px-1 py-px bg-navy/10 text-navy rounded-sm">班</span> : null}
                   </div>
-                  <div className="workhours-calendar-name text-[10px] sm:text-[12px] text-ink-soft mt-1.5 truncate">{day?.calendar_name || '\u00a0'}</div>
-                  <div className="workhours-calendar-record min-h-10 mt-2 font-mono text-[11px] sm:text-[13px] tabular-nums leading-snug">
+                  <div className="workhours-calendar-name text-[12px] text-ink-soft mt-1.5 truncate">{day?.calendar_name || '\u00a0'}</div>
+                  <div className="workhours-calendar-record min-h-10 mt-2 font-mono text-[13px] tabular-nums leading-snug">
                     {day?.actual_minutes != null ? <>
                       <div className="workhours-calendar-hours text-ink">{fmtMinutes(day.actual_minutes)}</div>
                       {day.daily_balance_minutes != null && <div data-balance-sign={day.daily_balance_minutes > 0 ? 'positive' : day.daily_balance_minutes < 0 ? 'negative' : 'zero'} className={`workhours-calendar-balance ${day.daily_balance_minutes < 0 ? 'text-plum' : 'text-ochre'}`}>{signedMinutes(day.daily_balance_minutes)}</div>}

@@ -100,11 +100,11 @@ def test_preview_endpoint_rejects_invalid_input(app):
     assert response.get_json() == {"error": "日期或上班时间无效"}
 
 
-def test_prediction_table_has_mobile_card_controls_and_selected_row_marker(app):
+def test_prediction_table_keeps_pc_rows_and_selected_row_marker(app):
     response = app.test_client().get("/?reference_date=2026-07-06")
     body = response.get_data(as_text=True)
 
-    assert 'id="toggle-other-days"' in body
+    assert 'id="toggle-other-days"' not in body
     assert 'class="prediction-table"' in body
     selected = re.search(
         r'<tr(?P<attributes>[^>]*)data-work-date="2026-07-06"[^>]*>',
@@ -117,5 +117,5 @@ def test_prediction_table_has_mobile_card_controls_and_selected_row_marker(app):
     assert selected is not None
     assert "is-selected-day" in selected.group("attributes")
     assert other is not None
-    assert "other-day" in other.group("attributes")
-    assert 'data-label="最早下班时间"' in body
+    assert "other-day" not in other.group("attributes")
+    assert '<th>最早下班时间</th>' in body

@@ -1,198 +1,196 @@
-/* Desktop typography follows the original interface; smaller viewports keep their existing styles. */
-@media (min-width: 1024px) {
-  :root,
-  :root[data-theme='teal'] {
-    --font-sans: "Segoe UI", "Microsoft YaHei", sans-serif;
-    --font-display: "Segoe UI", "Microsoft YaHei", sans-serif;
-    --font-mono: "Segoe UI", "Microsoft YaHei", sans-serif;
-  }
+/* PC-only presentation. Narrow windows scroll the same desktop interface. */
+:root,
+:root[data-theme='teal'] {
+  --font-sans: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-display: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
 
-  body {
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.45;
-  }
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.45;
+}
 
-  .workhours-app button,
-  .workhours-app input,
-  .workhours-app select,
-  .workhours-action,
-  .workhours-body {
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-app button,
+.workhours-app input,
+.workhours-app select,
+.workhours-action,
+.workhours-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-title {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-section-title {
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-label,
-  .workhours-help {
-    font-size: 13px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-label,
+.workhours-help {
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-meta {
-    font-size: 12px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-meta {
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-month {
-    font-size: 19px;
-    line-height: 1.45;
-  }
+.workhours-month {
+  font-size: 19px;
+  line-height: 1.45;
+}
 
-  .workhours-stat-value {
-    font-size: 19px;
-    font-weight: 700;
-    line-height: 1.45;
-  }
+.workhours-stat-value {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.45;
+}
 
-  .workhours-forecast-time {
-    font-size: clamp(48px, 7vw, 76px);
-    font-weight: 760;
-    letter-spacing: -0.055em;
-    line-height: 1.05;
-  }
+.workhours-forecast-time {
+  font-size: clamp(48px, 7vw, 76px);
+  font-weight: 760;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
 
-  .workhours-forecast-arrow {
-    font-size: 32px;
-    letter-spacing: normal;
-  }
+.workhours-forecast-arrow {
+  font-size: 32px;
+  letter-spacing: normal;
+}
 
-  .workhours-calendar th {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.45;
-  }
+.workhours-calendar th {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
 
-  .workhours-calendar-date {
-    font-size: 20px;
-    line-height: 1.45;
-  }
+.workhours-calendar-date {
+  font-size: 20px;
+  line-height: 1.45;
+}
 
-  .workhours-calendar-name,
-  .workhours-calendar-record {
-    font-size: 13px;
-    line-height: 1.45;
-  }
+.workhours-calendar-name,
+.workhours-calendar-record {
+  font-size: 13px;
+  line-height: 1.45;
+}
 
-  .workhours-calendar-hours {
-    font-size: 16px;
-    line-height: 1.45;
-  }
+.workhours-calendar-hours {
+  font-size: 16px;
+  line-height: 1.45;
+}
 
-  .workhours-calendar-balance {
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.45;
-  }
+.workhours-calendar-balance {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
 
-  .workhours-calendar-badge,
-  .workhours-calendar-status {
-    font-size: 12px;
-    line-height: 1.45;
-  }
+.workhours-calendar-badge,
+.workhours-calendar-status {
+  font-size: 12px;
+  line-height: 1.45;
+}
 
-  .workhours-trend .recharts-cartesian-axis-tick-value {
-    font-family: var(--font-sans);
-    font-size: 13px;
-    letter-spacing: normal;
-  }
+.workhours-trend .recharts-cartesian-axis-tick-value {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: normal;
+}
 
-  .workhours-chart-tooltip {
-    font-size: 14px;
-    line-height: 1.45;
-  }
+.workhours-chart-tooltip {
+  font-size: 14px;
+  line-height: 1.45;
+}
 
-  .workhours-entry-preview {
-    font-size: 13px;
-    line-height: 1.45;
-    letter-spacing: normal;
-  }
+.workhours-entry-preview {
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: normal;
+}
 
-  .workhours-time-picker,
-  .workhours-time-popover {
-    font-family: var(--font-sans);
-  }
+.workhours-time-picker,
+.workhours-time-popover {
+  font-family: var(--font-sans);
+}
 
-  .workhours-time-preview {
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.055em;
-    line-height: 1.05;
-  }
+.workhours-time-preview {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
 
-  .workhours-interval-fields {
-    grid-template-columns: minmax(160px, 1fr) minmax(140px, 160px) minmax(140px, 160px) auto auto;
-  }
+.workhours-interval-fields {
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 160px) minmax(140px, 160px) auto auto;
+}
 
-  .workhours-interval-fields input {
-    min-width: 0;
-  }
+.workhours-interval-fields input {
+  min-width: 0;
+}
 
-  :root[data-theme='classic'] {
-    --color-paper: #f5f7f4;
-    --color-surface: #ffffff;
-    --color-ink: #17201b;
-    --color-ink-soft: #66736b;
-    --color-rule: #dce4de;
-    --color-navy: #116b5c;
-    --color-plum: #b42318;
-    --color-ochre: #b56b16;
-    --chart-positive: #116b5c;
-    --chart-negative: #b42318;
-    --chart-muted: #66736b;
-    --chart-rule: #dce4de;
-  }
+:root[data-theme='classic'] {
+  --color-paper: #f5f7f4;
+  --color-surface: #ffffff;
+  --color-ink: #17201b;
+  --color-ink-soft: #66736b;
+  --color-rule: #dce4de;
+  --color-navy: #116b5c;
+  --color-plum: #b42318;
+  --color-ochre: #b56b16;
+  --chart-positive: #116b5c;
+  --chart-negative: #b42318;
+  --chart-muted: #66736b;
+  --chart-rule: #dce4de;
+}
 
-  :root[data-theme='classic'] .workhours-forecast-card {
-    --color-ink: #ffffff;
-    --color-ink-soft: #ffffff;
-    background: linear-gradient(135deg, #0d5b4e, #083f36);
-    border-color: #083f36;
-    color: #ffffff;
-  }
+:root[data-theme='classic'] .workhours-forecast-card {
+  --color-ink: #ffffff;
+  --color-ink-soft: #ffffff;
+  background: linear-gradient(135deg, #0d5b4e, #083f36);
+  border-color: #083f36;
+  color: #ffffff;
+}
 
-  :root[data-theme='classic'] .workhours-primary-action {
-    background-color: #116b5c;
-    border-color: #116b5c;
-    color: #ffffff;
-  }
+:root[data-theme='classic'] .workhours-primary-action {
+  background-color: #116b5c;
+  border-color: #116b5c;
+  color: #ffffff;
+}
 
-  :root[data-theme='classic'] .workhours-primary-action:hover {
-    background-color: #0b4d42;
-    border-color: #0b4d42;
-  }
+:root[data-theme='classic'] .workhours-primary-action:hover {
+  background-color: #0b4d42;
+  border-color: #0b4d42;
+}
 
-  :root[data-theme='classic'] .workhours-secondary-action {
-    border-color: #116b5c;
-    color: #116b5c;
-  }
+:root[data-theme='classic'] .workhours-secondary-action {
+  border-color: #116b5c;
+  color: #116b5c;
+}
 
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='positive'] {
-    color: var(--color-navy);
-  }
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='positive'] {
+  color: var(--color-navy);
+}
 
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='negative'] {
-    color: var(--color-plum);
-  }
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='negative'] {
+  color: var(--color-plum);
+}
 
-  :root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='zero'] {
-    color: var(--color-ink);
-  }
+:root[data-theme='classic'] .workhours-calendar-balance[data-balance-sign='zero'] {
+  color: var(--color-ink);
 }

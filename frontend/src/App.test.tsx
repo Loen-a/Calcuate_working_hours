@@ -210,31 +210,7 @@ it('cycles the desktop theme through cool, teal and classic using persisted resp
     .toEqual(['teal', 'classic', 'cool'])
 })
 
-it('displays classic theme as cool on mobile and restores classic after resize without writing settings', async () => {
-  const resize = mockDesktopViewport(false)
-  dashboard.theme = 'classic'
-  render(<App />)
-  expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
-  await act(async () => resize(true))
-  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
-  await act(async () => resize(false))
-  expect(screen.getByRole('button', { name: '冷色' })).toBeInTheDocument()
-  await act(async () => resize(true))
-  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
-  expect(dashboard.theme).toBe('classic')
-  expect(requests.some(request => request.path === '/api/settings')).toBe(false)
-})
 
-it('saves teal only when the mobile user clicks the cool fallback of classic theme', async () => {
-  mockDesktopViewport(false)
-  dashboard.theme = 'classic'
-  render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: '冷色' }))
-  expect(await screen.findByRole('button', { name: '青绿' })).toBeInTheDocument()
-  expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'teal' })
-  expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
-})
 
 it('keeps the previous theme visible when saving classic theme fails', async () => {
   mockDesktopViewport(true)
@@ -246,4 +222,17 @@ it('keeps the previous theme visible when saving classic theme fails', async () 
   expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
   expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'classic' })
+})
+
+it('keeps the existing PC editor and classic theme when the viewport is narrow', async () => {
+  const resize = mockDesktopViewport(false)
+  dashboard.theme = 'classic'
+  render(<App />)
+  expect(await screen.findByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: `编辑 ${date}` }))
+  expect(await screen.findByRole('dialog')).toHaveTextContent(date)
+  await act(async () => resize(true))
+  await act(async () => resize(false))
+  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  expect(requests.some(request => request.path === '/api/settings')).toBe(false)
 })

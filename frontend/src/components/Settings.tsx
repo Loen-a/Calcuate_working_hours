@@ -22,8 +22,8 @@ function IntervalForm({ interval, busy, onSave, onDelete }: {
     catch (error) { setError(error instanceof Error ? error.message : String(error)) }
   }
   return <form onSubmit={event => void handleSave(event)} className="border-t border-rule pt-4 mt-4">
-    <fieldset disabled={busy} className="workhours-interval-fields grid grid-cols-2 sm:grid-cols-[1fr_110px_110px_auto_auto] items-end gap-3">
-      <label className="workhours-label col-span-2 sm:col-span-1 text-[12px] text-ink-soft">名称
+    <fieldset disabled={busy} className="workhours-interval-fields grid grid-cols-[1fr_110px_110px_auto_auto] items-end gap-3">
+      <label className="workhours-label col-span-1 text-[12px] text-ink-soft">名称
         <input aria-label={`时段名称 ${id}`} required maxLength={100} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder={interval ? undefined : '新增非工作时段'} className="block mt-1 p-2 w-full bg-paper border border-rule rounded-sm text-ink" />
       </label>
       <label className="workhours-label text-[12px] text-ink-soft">开始
@@ -45,7 +45,7 @@ function IntervalForm({ interval, busy, onSave, onDelete }: {
 }
 export default function Settings({ data, busy, onPeriod, onSave, onDelete }: Props) {
   const [error, setError] = useState('')
-  return <details className="mt-8 bg-surface border border-rule rounded-sm p-4 sm:p-5">
+  return <details className="mt-8 bg-surface border border-rule rounded-sm p-5">
     <summary className="workhours-section-title cursor-pointer font-mono text-[13px] text-ink-soft tracking-wide">统计周期与非工作时段</summary>
     <div className="mt-5 flex flex-wrap gap-4 items-center justify-between">
       <label className="workhours-label text-[13px]">统计周期
