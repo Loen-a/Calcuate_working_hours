@@ -54,16 +54,6 @@ beforeEach(() => {
       const selected = new URL(input, window.location.origin).searchParams.get('reference_date') || date
       return json({ ...dashboard, selected_date: selected })
     }
-    if (path === '/api/weather') return json({
-      city: '杭州', timezone: 'Asia/Shanghai', month: new URL(input, window.location.origin).searchParams.get('month'),
-      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
-      fetched_at: '2026-09-08T00:00:00+00:00', warning: null, days: {},
-    })
-    if (path === '/api/air-quality') return json({
-      city: '杭州', timezone: 'Asia/Shanghai', standard: 'US', month: new URL(input, window.location.origin).searchParams.get('month'),
-      forecast_start: '2026-09-08', forecast_end: '2026-09-14', source: 'cache', stale: false,
-      fetched_at: '2026-09-08T00:00:00Z', warning: null, days: {},
-    })
     if (path === '/api/settings' && init?.method === 'PUT') {
       if (settingsError) return json({ error: settingsError }, 400)
       const settings = JSON.parse(init.body as string)
@@ -84,7 +74,6 @@ beforeEach(() => {
 })
 
 it('uses the server prediction and monthly totals, and preserves the selected date in the interface switch', async () => {
-  mockDesktopViewport(false)
   render(<App />)
   expect(await screen.findByText('21:17')).toBeInTheDocument()
   expect(screen.getByText('189h')).toBeInTheDocument()
@@ -97,7 +86,6 @@ it('uses the server prediction and monthly totals, and preserves the selected da
 })
 
 it('saves a start-only record without inventing an end time', async () => {
-  mockDesktopViewport(false)
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
   await screen.findByRole('dialog')
@@ -108,7 +96,6 @@ it('saves a start-only record without inventing an end time', async () => {
 })
 
 it('saves cross-midnight punches and retains inputs when saving fails', async () => {
-  mockDesktopViewport(false)
   dashboard.days[7].entry = { start_time: '22:10', end_time: '07:40' }
   entryError = '数据库写入失败'
   render(<App />)
@@ -123,7 +110,6 @@ it('saves cross-midnight punches and retains inputs when saving fails', async ()
 })
 
 it('sets leave independently without overwriting preserved punches', async () => {
-  mockDesktopViewport(false)
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
   await screen.findByRole('dialog')
@@ -175,9 +161,7 @@ it('locks navigation and other writes while importing, then refreshes the same s
   expect(await screen.findByRole('button', { name: '导入中…' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '下一月' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '青绿' })).toBeDisabled()
-  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeDisabled()
-  expect(screen.getByRole('button', { name: '编辑所选日期' })).toBeDisabled()
-  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
+  fireEvent.click(screen.getByRole('button', { name: `编辑 ${date}` }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   finish(json({ version: 3, entries: 2 }))
   expect(await screen.findByRole('status')).toHaveTextContent('导入成功，共 2 条记录')
@@ -214,30 +198,19 @@ function mockDesktopViewport(initialDesktop: boolean) {
   return (next: boolean) => { desktop = next; listeners.forEach(listener => listener()) }
 }
 
-it('cycles the desktop theme through cool, teal and classic using persisted responses', async () => {
-  mockDesktopViewport(true)
-  dashboard.theme = 'cool'
-  render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: '冷色' }))
-  fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
-  fireEvent.click(await screen.findByRole('button', { name: '经典绿' }))
-  expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
-  expect(requests.filter(request => request.path === '/api/settings').map(request => JSON.parse(request.init!.body as string).theme))
-    .toEqual(['teal', 'classic', 'cool'])
-})
 
-it('displays classic theme as cool on mobile and restores classic after resize without writing settings', async () => {
+it('keeps the frozen phone theme after resizing without writing settings', async () => {
   const resize = mockDesktopViewport(false)
   dashboard.theme = 'classic'
   render(<App />)
   expect(await screen.findByRole('button', { name: '冷色' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
   await act(async () => resize(true))
-  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '冷色' })).toBeInTheDocument()
   await act(async () => resize(false))
   expect(screen.getByRole('button', { name: '冷色' })).toBeInTheDocument()
   await act(async () => resize(true))
-  expect(screen.getByRole('button', { name: '经典绿' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '冷色' })).toBeInTheDocument()
   expect(dashboard.theme).toBe('classic')
   expect(requests.some(request => request.path === '/api/settings')).toBe(false)
 })
@@ -252,84 +225,13 @@ it('saves teal only when the mobile user clicks the cool fallback of classic the
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
 })
 
-it('keeps the previous theme visible when saving classic theme fails', async () => {
-  mockDesktopViewport(true)
-  settingsError = '主题保存失败，请重试'
-  render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: '青绿' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('主题保存失败，请重试')
-  expect(screen.getByRole('button', { name: '青绿' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: '经典绿' })).not.toBeInTheDocument()
-  expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
-  expect(JSON.parse(requests.find(request => request.path === '/api/settings')!.init!.body as string)).toEqual({ theme: 'classic' })
-})
 
-it('selects a PC calendar date into the detail panel before explicitly opening the editor', async () => {
+it('keeps the phone calendar and avoids PC-only requests even in a wide window', async () => {
   mockDesktopViewport(true)
-  render(<App />)
-  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
-  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
-  expect(within(panel).getByText('21:17')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
-  await waitFor(() => expect(within(panel).getByRole('heading', { name: '2026-09-09' })).toBeInTheDocument())
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  expect(requests.some(request => request.init?.method === 'PUT')).toBe(false)
-  fireEvent.click(within(panel).getByRole('button', { name: '编辑所选日期' }))
-  expect(await screen.findByRole('dialog')).toHaveTextContent('2026-09-09')
-})
-
-it('keeps the previous selected date and details when PC navigation fails', async () => {
-  mockDesktopViewport(true)
-  render(<App />)
-  const panel = await screen.findByRole('complementary', { name: '所选日期详情' })
-  dashboardError = '读取所选日期失败'
-  fireEvent.click(screen.getByRole('button', { name: '选择 2026-09-09' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('读取所选日期失败')
-  expect(within(panel).getByRole('heading', { name: date })).toBeInTheDocument()
-  expect(screen.getByLabelText('查看日期')).toHaveValue(date)
-  expect(screen.getByRole('button', { name: `选择 ${date}` })).toHaveAttribute('aria-pressed', 'true')
-})
-
-it('retains mobile click-to-edit and the six-row calendar without the PC side panel', async () => {
-  mockDesktopViewport(false)
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: `编辑 ${date}` }))
   expect(await screen.findByRole('dialog')).toHaveTextContent(date)
-  expect(screen.queryByRole('complementary', { name: '所选日期详情' })).not.toBeInTheDocument()
   expect(screen.getAllByRole('row')).toHaveLength(7)
-})
-
-
-it.each(['pending', 'failed'])('keeps PC date selection, editing and saving usable while weather is %s', async mode => {
-  mockDesktopViewport(true)
-  const originalFetch = vi.mocked(fetch).getMockImplementation()!
-  const weatherCalls: RequestInit[] = []
-  vi.mocked(fetch).mockImplementation((input, init) => {
-    if (String(input).startsWith('/api/weather?')) {
-      weatherCalls.push(init || {})
-      return mode === 'pending' ? new Promise<Response>(() => undefined) : Promise.reject(new Error('天气连接失败'))
-    }
-    return originalFetch(input, init)
-  })
-  render(<App />)
-  expect(await screen.findByText(mode === 'pending' ? '天气加载中…' : '天气暂不可用，稍后自动重试')).toBeInTheDocument()
-  const selected = screen.getByRole('button', { name: `选择 ${date}` })
-  expect(selected).toBeEnabled()
-  fireEvent.click(selected)
-  await waitFor(() => expect(selected).toBeEnabled())
-  fireEvent.click(screen.getByRole('button', { name: '编辑所选日期' }))
-  fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
-  await waitFor(() => expect(requests.some(request => request.path === `/api/entries/${date}` && request.init?.method === 'PUT')).toBe(true))
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(weatherCalls).toHaveLength(1)
-  expect(screen.getByRole('button', { name: `选择 ${date}` })).toBeEnabled()
-})
-
-it('does not request or display weather on mobile', async () => {
-  mockDesktopViewport(false)
-  render(<App />)
-  await screen.findByText('Workhours')
-  expect(requests.some(request => request.path === '/api/weather' || request.path === '/api/air-quality')).toBe(false)
-  expect(screen.queryByText('杭州')).not.toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: 'Open-Meteo' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
+  expect(requests.some(request => ['/api/weather', '/api/air-quality'].includes(request.path))).toBe(false)
 })

@@ -11,7 +11,7 @@ import {
 import type { Day } from '../lib/types'
 import { fmtMinutes } from '../lib/format'
 
-interface Props { days: Day[]; desktop?: boolean }
+interface Props { days: Day[] }
 
 interface Point {
   day: number
@@ -43,7 +43,7 @@ function Tip({ active, payload, label }: TipProps) {
   )
 }
 
-export default function TrendChart({ days, desktop = false }: Props) {
+export default function TrendChart({ days }: Props) {
   const data: Point[] = days
     .filter(day => day.cumulative_balance_minutes != null)
     .map(day => ({ day: Number(day.date.slice(8)), balance: day.cumulative_balance_minutes! }))
@@ -54,10 +54,10 @@ export default function TrendChart({ days, desktop = false }: Props) {
   const grad = last >= 0 ? 'g-navy' : 'g-plum'
 
   return (
-    <section className="workhours-trend" aria-label={desktop ? '工时趋势' : undefined}>
+    <section className="workhours-trend">
       <div className="flex items-center gap-3 mb-5">
-        {!desktop && <><span className="workhours-label text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Trend</span>
-        <span className="text-ink-soft/40 font-mono">·</span></>}
+        <span className="workhours-label text-[13px] uppercase tracking-[0.2em] text-ink-soft font-mono">Trend</span>
+        <span className="text-ink-soft/40 font-mono">·</span>
         <span className="workhours-section-title text-[13px] tracking-[0.2em] text-ink-soft font-mono">
           累计盈余 / 缺口
         </span>

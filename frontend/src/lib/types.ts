@@ -57,38 +57,3 @@ export interface DashboardData {
   }
   holiday_status: { year: number; source: 'cache' | 'remote' | 'fallback'; warning: string | null }
 }
-
-export type WeatherIcon = 'clear' | 'partly-cloudy' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'thunderstorm'
-export interface DayWeather {
-  code: number
-  description: string
-  icon: WeatherIcon
-  temperature_min: number
-  temperature_max: number
-  humidity_mean?: number | null
-}
-export interface WeatherResult {
-  city: string
-  timezone: string
-  month: string
-  forecast_start: string
-  forecast_end: string
-  source: 'remote' | 'cache' | 'unavailable'
-  stale: boolean
-  fetched_at: string | null
-  warning: string | null
-  days: Record<string, DayWeather>
-}
-export interface WeatherState {
-  data: WeatherResult | null
-  loading: boolean
-  error: string | null
-}
-
-export type AirQualityCategory = 'good' | 'moderate' | 'sensitive' | 'unhealthy' | 'very-unhealthy' | 'hazardous'
-export interface DayAirQuality { aqi_max: number; category: AirQualityCategory; label: string }
-export interface AirQualityResult extends Omit<WeatherResult, 'days'> {
-  standard: 'US'
-  days: Record<string, DayAirQuality>
-}
-export interface AirQualityState { data: AirQualityResult | null; loading: boolean; error: string | null }

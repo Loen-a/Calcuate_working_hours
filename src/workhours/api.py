@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from dataclasses import asdict
 from datetime import date, datetime, time, timedelta, timezone
 
 from flask import Response, jsonify, request
@@ -155,42 +154,6 @@ def register_api(app, store, today_provider, now_provider) -> None:
         today = today_provider()
         selected = _date(request.args["reference_date"]) if "reference_date" in request.args else today
         return jsonify(dashboard_payload(store, today, selected))
-
-    @app.get("/api/weather")
-    def get_calendar_weather():
-        from workhours.weather import get_weather
-
-        raw_month = request.args.get("month", "")
-        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", raw_month):
-            raise ValueError("月份须使用 YYYY-MM 格式")
-        month = _date(raw_month + "-01")
-        clock = app.config.get("WEATHER_NOW_PROVIDER")
-        weather = get_weather(
-            store, month, now=clock() if clock else None,
-            allow_network=app.config.get("WEATHER_NETWORK_ENABLED", True),
-            fetcher=app.config.get("WEATHER_FETCHER"),
-        )
-        response = jsonify(asdict(weather))
-        response.headers["Cache-Control"] = "no-store"
-        return response
-
-    @app.get("/api/air-quality")
-    def get_calendar_air_quality():
-        from workhours.air_quality import get_air_quality
-
-        raw_month = request.args.get("month", "")
-        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", raw_month):
-            raise ValueError("月份须使用 YYYY-MM 格式")
-        month = _date(raw_month + "-01")
-        clock = app.config.get("WEATHER_NOW_PROVIDER")
-        result = get_air_quality(
-            store, month, now=clock() if clock else None,
-            allow_network=app.config.get("WEATHER_NETWORK_ENABLED", True) and app.config.get("AIR_QUALITY_NETWORK_ENABLED", True),
-            fetcher=app.config.get("AIR_QUALITY_FETCHER"),
-        )
-        response = jsonify(asdict(result))
-        response.headers["Cache-Control"] = "no-store"
-        return response
 
     @app.put("/api/entries/<work_date>")
     def put_entry(work_date):

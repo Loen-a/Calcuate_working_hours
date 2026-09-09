@@ -1,4 +1,4 @@
-import type { AirQualityResult, CalendarKind, DashboardData, Entry, Interval, Period, Preview, Theme, WeatherResult } from './types'
+import type { CalendarKind, DashboardData, Entry, Interval, Period, Preview, Theme } from './types'
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -57,13 +57,4 @@ export function importBackup(file: File): Promise<{ version: number; entries: nu
   const body = new FormData()
   body.append('file', file)
   return request('/api/backup', { method: 'POST', body })
-}
-
-export const getWeather = (month: string, signal?: AbortSignal) =>
-  request<WeatherResult>('/api/weather?' + new URLSearchParams({ month }), { signal })
-
-export async function getAirQuality(month: string, signal?: AbortSignal): Promise<AirQualityResult> {
-  const data = await request<AirQualityResult>('/api/air-quality?' + new URLSearchParams({ month }), { signal })
-  if (data?.standard !== 'US') throw new Error('空气质量指数口径无效')
-  return data
 }

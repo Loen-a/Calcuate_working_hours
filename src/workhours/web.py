@@ -33,7 +33,7 @@ def create_app(
 ) -> Flask:
     app = Flask(__name__)
     app.secret_key = "local-workhours-dev"
-    app.config.update(DEFAULT_INTERFACE="new", HOLIDAY_NETWORK_ENABLED=True, WEATHER_NETWORK_ENABLED=True,
+    app.config.update(DEFAULT_INTERFACE="new", HOLIDAY_NETWORK_ENABLED=True,
                       MAX_CONTENT_LENGTH=16 * 1024 * 1024)
 
     today_provider = today_provider or date.today
