@@ -65,6 +65,9 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
     monthly = context["month_forecast"]
     forecast = context["forecast"]
     settings = context["settings"]
+    # 页面汇总只使用实录有效工时。缺录的中性估算属于日建议规划，
+    # 不能当作已完成工时抵扣这里的待完成，也不能据此标记实际达标。
+    actual_remaining = max(forecast.target_minutes - forecast.completed_minutes, 0)
     holiday_status = context["holiday_status"]
     manual = context["overrides"]
     leaves = context["leave_days"]
@@ -117,7 +120,7 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
             "target_minutes": monthly.month_target_minutes,
             "completed_minutes": monthly.month_completed_minutes,
             "balance_minutes": sum(item.daily_balance_minutes or 0 for item in monthly.days.values()),
-            "remaining_target_minutes": monthly.remaining_target_minutes,
+            "remaining_target_minutes": max(monthly.month_target_minutes - monthly.month_completed_minutes, 0),
             "workday_count": len(monthly.workdays),
             "recorded_days": sum(item.actual_minutes is not None for item in monthly.days.values()),
             "missing_history_days": [day.isoformat() for day in monthly.missing_history_days],
@@ -125,8 +128,8 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
         "forecast": {
             "period_start": forecast.period_start.isoformat(), "period_end": forecast.period_end.isoformat(),
             "target_minutes": forecast.target_minutes, "completed_minutes": forecast.completed_minutes,
-            "remaining_target_minutes": forecast.remaining_target_minutes,
-            "carryover_minutes": forecast.carryover_minutes, "goal_met": forecast.goal_met,
+            "remaining_target_minutes": actual_remaining,
+            "carryover_minutes": forecast.carryover_minutes, "goal_met": actual_remaining == 0,
         },
         "holiday_status": {"year": holiday_status.year, "source": holiday_status.source,
                            "warning": holiday_status.warning},
