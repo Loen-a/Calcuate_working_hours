@@ -1,5 +1,5 @@
 import type { DashboardData } from '../lib/types'
-import { fmtMinutes, signedMinutes } from '../lib/format'
+import { fmtAverageHours, fmtMinutes, signedMinutes } from '../lib/format'
 import { useCountUp } from '../lib/useCountUp'
 
 function Card({ label, value, sub, tone = 'ink' }: {
@@ -22,7 +22,17 @@ export default function Dashboard({ data }: { data: DashboardData }) {
         <Card label="当月目标" value={fmtMinutes(month.target_minutes)} sub={`${month.workday_count} 工作日 · 已排除全天请假`} />
         <Card label="已完成" value={fmtMinutes(month.completed_minutes)} sub={`已录入 ${month.recorded_days} 天`} />
         <Card label={month.balance_minutes >= 0 ? '盈余' : '缺口'} value={signedMinutes(balance)} tone={month.balance_minutes >= 0 ? 'navy' : 'plum'} sub="当月累计工时余额" />
-        <Card label="工作日" value={`${month.recorded_days}/${month.workday_count}`} sub="已录入 / 本月工作日" />
+        <div className="bg-surface border border-rule rounded-sm p-5 min-w-0">
+          <div className="workhours-label text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2.5">平均用时</div>
+          <dl className="workhours-averages" aria-label="平均工时">
+            <div title="当前查看月份的有效工时 ÷ 该月有效录入天数">
+              <dt>月平均<span aria-hidden="true"> - </span></dt><dd>{fmtAverageHours(data.averages.month_minutes)}</dd>
+            </div>
+            <div title="所有历史有效工时 ÷ 历史有效录入天数">
+              <dt>总平均<span aria-hidden="true"> - </span></dt><dd>{fmtAverageHours(data.averages.all_time_minutes)}</dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </section>
   )

@@ -18,6 +18,7 @@ const makeDashboard = () => ({
   selected_preview: { available: true, required_minutes: 577, required_label: '9 小时 37 分钟',
     balance_before_minutes: -37, balance_label: '-37 分钟', reason_label: '补足历史欠时',
     suggested_end: '21:17', suggested_end_label: '21:17', day_offset: 0 },
+  averages: { all_time_minutes: 510 as number | null, month_minutes: 501 as number | null },
   month: { start: '2026-09-01', end: '2026-09-30', target_minutes: 11340, completed_minutes: 1503,
     balance_minutes: -37, remaining_target_minutes: 9837, workday_count: 21,
     recorded_days: 3, missing_history_days: ['2026-09-07'] },
@@ -89,11 +90,23 @@ it('uses the server prediction and monthly totals, and preserves the selected da
   expect(await screen.findByText('21:17')).toBeInTheDocument()
   expect(screen.getByText('189h')).toBeInTheDocument()
   expect(screen.getByText('25h 03m')).toBeInTheDocument()
+  const averages = screen.getByLabelText('平均工时')
+  expect(averages).toHaveTextContent('月平均 - 8.35总平均 - 8.5')
+  expect(averages).not.toHaveTextContent('小时/天')
+  expect(averages.parentElement).not.toHaveTextContent('已完成')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', `/interface/old?reference_date=${date}`)
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
   await openDateEditor('2026-09-09')
   await screen.findByRole('dialog')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', '/interface/old?reference_date=2026-09-09')
+  expect(screen.getByLabelText('平均工时')).toHaveTextContent('月平均 - 8.35')
+})
+
+it('shows no average data when there are no valid recorded days', async () => {
+  dashboard.averages = { all_time_minutes: null, month_minutes: null }
+  render(<App />)
+  const averages = await screen.findByLabelText('平均工时')
+  expect(within(averages).getAllByText('暂无数据')).toHaveLength(2)
 })
 
 it('saves a start-only record without inventing an end time', async () => {

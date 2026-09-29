@@ -7,6 +7,10 @@ export function fmtMinutes(value: number): string {
   return `${value < 0 ? '−' : ''}${label}`
 }
 export const signedMinutes = (value: number) => `${value > 0 ? '+' : ''}${fmtMinutes(value)}`
+const decimalHours = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
+export function fmtAverageHours(minutes: number | null): string {
+  return minutes === null ? '暂无数据' : decimalHours.format(minutes / 60)
+}
 export const fmtDate = (y: number, m: number, d: number) =>
   `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 export function calendarDate(year: number, monthIndex: number, day: number): Date {

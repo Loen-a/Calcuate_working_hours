@@ -11,7 +11,9 @@ from flask import Response, jsonify, request
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from workhours.backup import build_backup, restore_backup
-from workhours.domain import DayOverride, NonWorkingInterval, PeriodMode, WorkEntry
+from workhours.domain import (
+    DayOverride, NonWorkingInterval, PeriodMode, WorkEntry, effective_minutes, is_workday,
+)
 from workhours.storage import THEMES
 from workhours.web import (
     _build_dashboard, _holiday_result, _preview_payload, _record_clock,
@@ -60,6 +62,31 @@ def _stamp(value: time | None) -> str | None:
     return value.strftime("%H:%M") if value is not None else None
 
 
+def _historical_average_minutes(store, settings, holiday_status) -> float | None:
+    entries = store.list_entries(date.min, date.max)
+    leaves = store.list_leave_days(date.min, date.max)
+    overrides = store.list_overrides(date.min, date.max)
+    # 复用当前年份的查询结果；其他有完整记录的年份按需加载一次。
+    holidays_by_year = {holiday_status.year: holiday_status.holidays}
+    total_minutes = recorded_days = 0
+    for work_date, entry in entries.items():
+        if work_date in leaves or entry.start is None or entry.end is None:
+            continue
+        if work_date not in overrides:
+            if work_date.year not in holidays_by_year:
+                holidays_by_year[work_date.year] = _holiday_result(store, work_date.year).holidays
+            auto = holidays_by_year[work_date.year].get(work_date.strftime("%m-%d"))
+            if auto:
+                overrides[work_date] = DayOverride.HOLIDAY if auto["isOffDay"] else DayOverride.WORKDAY
+        if not is_workday(work_date, overrides):
+            continue
+        actual = effective_minutes(entry, settings.non_working_intervals)
+        if actual is not None:
+            total_minutes += actual
+            recorded_days += 1
+    return total_minutes / recorded_days if recorded_days else None
+
+
 def dashboard_payload(store, today: date, selected_date: date) -> dict:
     context = _build_dashboard(store, today, selected_date)
     monthly = context["month_forecast"]
@@ -69,6 +96,7 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
     # 不能当作已完成工时抵扣这里的待完成，也不能据此标记实际达标。
     actual_remaining = max(forecast.target_minutes - forecast.completed_minutes, 0)
     holiday_status = context["holiday_status"]
+    recorded_days = sum(item.actual_minutes is not None for item in monthly.days.values())
     manual = context["overrides"]
     leaves = context["leave_days"]
     days = []
@@ -115,6 +143,10 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
                        "enabled": interval.enabled} for interval in settings.non_working_intervals],
         "days": days,
         "selected_preview": _preview_payload(context["selected_preview"], settings),
+        "averages": {
+            "all_time_minutes": _historical_average_minutes(store, settings, holiday_status),
+            "month_minutes": monthly.month_completed_minutes / recorded_days if recorded_days else None,
+        },
         "month": {
             "start": context["month_start"].isoformat(), "end": context["month_end"].isoformat(),
             "target_minutes": monthly.month_target_minutes,
@@ -122,7 +154,7 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
             "balance_minutes": sum(item.daily_balance_minutes or 0 for item in monthly.days.values()),
             "remaining_target_minutes": max(monthly.month_target_minutes - monthly.month_completed_minutes, 0),
             "workday_count": len(monthly.workdays),
-            "recorded_days": sum(item.actual_minutes is not None for item in monthly.days.values()),
+            "recorded_days": recorded_days,
             "missing_history_days": [day.isoformat() for day in monthly.missing_history_days],
         },
         "forecast": {

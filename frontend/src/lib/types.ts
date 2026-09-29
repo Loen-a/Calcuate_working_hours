@@ -46,6 +46,7 @@ export interface DashboardData {
   intervals: Interval[]
   days: Day[]
   selected_preview: Preview
+  averages: { all_time_minutes: number | null; month_minutes: number | null }
   month: {
     start: string; end: string; target_minutes: number; completed_minutes: number
     balance_minutes: number; remaining_target_minutes: number; workday_count: number

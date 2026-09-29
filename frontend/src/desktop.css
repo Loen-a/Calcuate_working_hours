@@ -271,6 +271,38 @@ body {
   margin-block: 8px;
 }
 
+.workhours-averages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.workhours-averages > div {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workhours-averages dt,
+.workhours-averages span {
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+
+.workhours-averages dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-ink);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .workhours-period-summary {
   margin-block: 14px 20px;
   font-size: 14px;
