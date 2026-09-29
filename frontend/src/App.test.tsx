@@ -90,23 +90,24 @@ it('uses the server prediction and monthly totals, and preserves the selected da
   expect(await screen.findByText('21:17')).toBeInTheDocument()
   expect(screen.getByText('189h')).toBeInTheDocument()
   expect(screen.getByText('25h 03m')).toBeInTheDocument()
-  const averages = screen.getByLabelText('平均工时')
-  expect(averages).toHaveTextContent('月平均 · 8.35总平均 · 8.5')
+  const averages = screen.getByText('平均用时').parentElement!
+  expect(within(averages).getByText('8.35/8.5')).toBeInTheDocument()
+  expect(within(averages).getByText('月平均/总平均')).toBeInTheDocument()
   expect(averages).not.toHaveTextContent('小时/天')
-  expect(averages.parentElement).not.toHaveTextContent('已完成')
+  expect(averages).not.toHaveTextContent('已完成')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', `/interface/old?reference_date=${date}`)
   expect(document.documentElement).toHaveAttribute('data-theme', 'teal')
   await openDateEditor('2026-09-09')
   await screen.findByRole('dialog')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', '/interface/old?reference_date=2026-09-09')
-  expect(screen.getByLabelText('平均工时')).toHaveTextContent('月平均 · 8.35')
+  expect(screen.getByText('平均用时').parentElement).toHaveTextContent('8.35/8.5')
 })
 
 it('shows no average data when there are no valid recorded days', async () => {
   dashboard.averages = { all_time_minutes: null, month_minutes: null }
   render(<App />)
-  const averages = await screen.findByLabelText('平均工时')
-  expect(within(averages).getAllByText('暂无数据')).toHaveLength(2)
+  const averages = (await screen.findByText('平均用时')).parentElement!
+  expect(within(averages).getByText('暂无数据')).toBeInTheDocument()
 })
 
 it('saves a start-only record without inventing an end time', async () => {
