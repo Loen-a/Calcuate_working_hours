@@ -26,10 +26,12 @@ export default function Dashboard({ data }: { data: DashboardData }) {
           <div className="workhours-label text-[13px] tracking-[0.16em] text-ink-soft font-mono mb-2.5">平均用时</div>
           <dl className="workhours-averages" aria-label="平均工时">
             <div title="当前查看月份的有效工时 ÷ 该月有效录入天数">
-              <dt>月平均<span aria-hidden="true"> - </span></dt><dd>{fmtAverageHours(data.averages.month_minutes)}</dd>
+              <dt>月平均<span aria-hidden="true"> · </span></dt>
+              <dd className={data.averages.month_minutes === null ? 'workhours-help font-mono text-ink-soft' : 'workhours-stat-value font-mono tabular-nums leading-tight text-navy'}>{fmtAverageHours(data.averages.month_minutes)}</dd>
             </div>
             <div title="所有历史有效工时 ÷ 历史有效录入天数">
-              <dt>总平均<span aria-hidden="true"> - </span></dt><dd>{fmtAverageHours(data.averages.all_time_minutes)}</dd>
+              <dt>总平均<span aria-hidden="true"> · </span></dt>
+              <dd className={data.averages.all_time_minutes === null ? 'workhours-help font-mono text-ink-soft' : 'workhours-stat-value font-mono tabular-nums leading-tight text-navy'}>{fmtAverageHours(data.averages.all_time_minutes)}</dd>
             </div>
           </dl>
         </div>

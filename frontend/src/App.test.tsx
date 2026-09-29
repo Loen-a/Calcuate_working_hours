@@ -91,7 +91,7 @@ it('uses the server prediction and monthly totals, and preserves the selected da
   expect(screen.getByText('189h')).toBeInTheDocument()
   expect(screen.getByText('25h 03m')).toBeInTheDocument()
   const averages = screen.getByLabelText('平均工时')
-  expect(averages).toHaveTextContent('月平均 - 8.35总平均 - 8.5')
+  expect(averages).toHaveTextContent('月平均 · 8.35总平均 · 8.5')
   expect(averages).not.toHaveTextContent('小时/天')
   expect(averages.parentElement).not.toHaveTextContent('已完成')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', `/interface/old?reference_date=${date}`)
@@ -99,7 +99,7 @@ it('uses the server prediction and monthly totals, and preserves the selected da
   await openDateEditor('2026-09-09')
   await screen.findByRole('dialog')
   expect(screen.getByRole('link', { name: '切换旧界面' })).toHaveAttribute('href', '/interface/old?reference_date=2026-09-09')
-  expect(screen.getByLabelText('平均工时')).toHaveTextContent('月平均 - 8.35')
+  expect(screen.getByLabelText('平均工时')).toHaveTextContent('月平均 · 8.35')
 })
 
 it('shows no average data when there are no valid recorded days', async () => {
