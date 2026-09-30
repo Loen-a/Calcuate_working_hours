@@ -24,7 +24,7 @@ it('shows authoritative minutes, balance and next-day prediction without derivin
   expect(screen.getByText('工作日')).toBeInTheDocument()
   expect(screen.getByText('08:17')).toBeInTheDocument()
   expect(screen.getByText('19:03')).toBeInTheDocument()
-  expect(screen.getByText('7h 55m')).toBeInTheDocument()
+  expect(screen.getByText('7.92')).toBeInTheDocument()
   expect(screen.getByText('9h 37m')).toBeInTheDocument()
   expect(screen.getByText('−37m')).toBeInTheDocument()
   expect(screen.getByText('次日 03:17')).toBeInTheDocument()

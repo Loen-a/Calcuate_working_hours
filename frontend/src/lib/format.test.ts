@@ -1,16 +1,19 @@
 import { expect, it } from 'vitest'
-import { fmtAverageHours, fmtDate, shiftMonth } from './format'
+import { fmtAverageHours, fmtDate, fmtDecimalHours, shiftMonth } from './format'
 
 it.each([
   [510, '8.5'],
   [495, '8.25'],
+  [500, '8.33'],
+  [1, '0.02'],
   [540, '9'],
   [540.75, '9.01'],
   [487.5, '8.13'],
   [0, '0'],
   [null, '暂无数据'],
-])('formats %s average minutes as decimal hours without trailing zeroes', (minutes, label) => {
+])('formats %s minutes as decimal hours without trailing zeroes', (minutes, label) => {
   expect(fmtAverageHours(minutes)).toBe(label)
+  if (minutes !== null) expect(fmtDecimalHours(minutes)).toBe(label)
 })
 
 it('preserves low years and clamps the selected day when navigating months', () => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CalendarKind, Day, Entry, Preview } from '../lib/types'
 import { getPreview } from '../lib/api'
-import { fmtMinutes } from '../lib/format'
+import { fmtDecimalHours, fmtMinutes } from '../lib/format'
 import TimePicker from './TimePicker'
 
 interface Props {
@@ -84,7 +84,7 @@ export default function EntryModal({ day, preview, externalBusy, onClose, onSave
             : day.leave ? '全天请假，无下班预测'
               : livePreview.available ? <><span className="text-ink-soft">最早下班 </span><strong>{livePreview.suggested_end_label || livePreview.suggested_end}</strong><p className="text-ink-soft">需完成 {livePreview.required_label || fmtMinutes(livePreview.required_minutes || 0)} · {livePreview.reason_label}</p></>
                 : livePreview.reason_label || '填写上班时间后查看预测'}
-          {day.actual_minutes != null && <p className="text-ink-soft mt-1">已保存记录的净工时：{fmtMinutes(day.actual_minutes)}</p>}
+          {day.actual_minutes != null && <p className="text-ink-soft mt-1">已保存记录的净工时：{fmtDecimalHours(day.actual_minutes)}</p>}
         </div>
         {error && <p role="alert" className="text-plum text-[13px] mt-3">{error}</p>}
         <div className="flex justify-between items-center gap-2 mt-5">

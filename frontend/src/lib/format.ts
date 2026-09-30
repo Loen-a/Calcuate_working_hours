@@ -8,8 +8,11 @@ export function fmtMinutes(value: number): string {
 }
 export const signedMinutes = (value: number) => `${value > 0 ? '+' : ''}${fmtMinutes(value)}`
 const decimalHours = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
+export function fmtDecimalHours(minutes: number): string {
+  return decimalHours.format(minutes / 60)
+}
 export function fmtAverageHours(minutes: number | null): string {
-  return minutes === null ? '暂无数据' : decimalHours.format(minutes / 60)
+  return minutes === null ? '暂无数据' : fmtDecimalHours(minutes)
 }
 export const fmtDate = (y: number, m: number, d: number) =>
   `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`

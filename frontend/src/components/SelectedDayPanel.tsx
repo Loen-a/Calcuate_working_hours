@@ -1,5 +1,5 @@
 import type { Day, Preview } from '../lib/types'
-import { fmtMinutes, signedMinutes } from '../lib/format'
+import { fmtDecimalHours, fmtMinutes, signedMinutes } from '../lib/format'
 
 interface Props {
   day: Day
@@ -17,7 +17,7 @@ export default function SelectedDayPanel({ day, preview, today, busy, onEdit }: 
   const required = preview.required_minutes ?? day.required_minutes
   const balance = preview.balance_before_minutes ?? day.balance_before_minutes
   const actualLabel = day.actual_minutes != null
-    ? fmtMinutes(day.actual_minutes)
+    ? fmtDecimalHours(day.actual_minutes)
     : !counted ? '不计入' : day.entry ? '待补全' : '尚未记录'
 
   let predictionMessage: string

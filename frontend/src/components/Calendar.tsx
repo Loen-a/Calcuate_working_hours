@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type { AirQualityState, Day, WeatherState } from '../lib/types'
 import WeatherDay from './WeatherDay'
-import { calendarDate, fmtDate, fmtMinutes, signedMinutes } from '../lib/format'
+import { calendarDate, fmtDate, fmtDecimalHours, signedMinutes } from '../lib/format'
 
 interface Props { selected: string; today: string; days: Day[]; busy: boolean; weather?: WeatherState; airQuality?: AirQualityState; onPick: (date: string) => void }
 const WEEK = ['一', '二', '三', '四', '五', '六', '日']
@@ -98,7 +98,7 @@ export default function Calendar({ selected, today, days, busy, weather, airQual
                   </div>
                   <div className="workhours-calendar-record min-h-10 mt-2 font-mono text-[13px] tabular-nums leading-snug">
                     {day?.actual_minutes != null ? <>
-                      <div className="workhours-calendar-hours text-ink">{fmtMinutes(day.actual_minutes)}</div>
+                      <div className="workhours-calendar-hours text-ink">{fmtDecimalHours(day.actual_minutes)}</div>
                       {day.daily_balance_minutes != null && <div data-balance-sign={day.daily_balance_minutes > 0 ? 'positive' : day.daily_balance_minutes < 0 ? 'negative' : 'zero'} className={`workhours-calendar-balance ${day.daily_balance_minutes < 0 ? 'text-plum' : 'text-ochre'}`}>{signedMinutes(day.daily_balance_minutes)}</div>}
                     </> : day?.leave && day.entry ? <span className="workhours-calendar-status text-ink-soft text-[10px]">打卡保留</span>
                       : day?.entry ? day.entry.start_time && day.entry.end_time
