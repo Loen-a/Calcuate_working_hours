@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DashboardData } from './lib/types'
 import * as api from './lib/api'
-import { fmtMinutes, shiftMonth } from './lib/format'
+import { fmtDecimalHours, fmtMinutes, shiftMonth } from './lib/format'
 import { useAppliedTheme } from './lib/useTheme'
 import { useAirQuality, useWeather } from './lib/useWeather'
 import Header from './components/Header'
@@ -62,11 +62,19 @@ export default function App() {
     busyRef.current = kind; setBusyKind(kind); setError(''); setNotice('')
     try {
       const result = await action()
-      try { await reload(dateAfter ? dateAfter(result) : data!.selected_date) }
+      let next: DashboardData
+      try { next = await reload(dateAfter ? dateAfter(result) : data!.selected_date) }
       catch (error) {
         const label = kind === 'import' ? '导入' : '操作'
         setFatal(`${label}已完成，但重新读取失败：${messageOf(error)}。请刷新页面后继续。`)
         throw error
+      }
+      if (kind === 'entry' || kind === 'clock-out') {
+        const recorded = next.days.find(day => day.date === next.selected_date)
+        if (recorded?.compliant === false && recorded.actual_minutes != null) {
+          const minimum = next.settings.minimum_minutes_per_day
+          window.alert(`${recorded.date} 打卡记录已保存。\n净工时为 ${fmtDecimalHours(recorded.actual_minutes)} 小时，不足 ${fmtDecimalHours(minimum)} 小时，还差 ${fmtMinutes(minimum - recorded.actual_minutes)}。`)
+        }
       }
       return result
     } finally { busyRef.current = null; setBusyKind(null) }
@@ -88,7 +96,7 @@ export default function App() {
   }
   const handleClock = async (kind: 'in' | 'out') => {
     try {
-      await mutate('clock', () => api.clock(kind), result => result.date)
+      await mutate('clock-' + kind, () => api.clock(kind), result => result.date)
       setNotice(kind === 'in' ? '已记录当前上班时间' : '已记录当前下班时间')
     } catch (error) { setError(messageOf(error)) }
   }

@@ -11,9 +11,9 @@ const makeDashboard = () => ({
     date: `2026-09-${String(i + 1).padStart(2, '0')}`, is_workday: true, leave: false,
     calendar_name: '工作日', manual_override: null,
     entry: i === 7 ? { start_time: '10:13', end_time: null as string | null } : null,
-    actual_minutes: null, daily_balance_minutes: null, cumulative_balance_minutes: null,
+    actual_minutes: null as number | null, daily_balance_minutes: null, cumulative_balance_minutes: null,
     balance_before_minutes: -37, required_minutes: 577, recommended_minutes: 600,
-    suggested_end: '21:17', suggested_end_day_offset: 0, reason: 'balance', compliant: null,
+    suggested_end: '21:17', suggested_end_day_offset: 0, reason: 'balance', compliant: null as boolean | null,
   })),
   selected_preview: { available: true, required_minutes: 577, required_label: '9 小时 37 分钟',
     balance_before_minutes: -37, balance_label: '-37 分钟', reason_label: '补足历史欠时',
@@ -33,6 +33,7 @@ let importError = ''
 let entryError = ''
 let dashboardError = ''
 let settingsError = ''
+let afterPunch: (() => void) | undefined
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
@@ -44,6 +45,7 @@ beforeEach(() => {
   entryError = ''
   dashboardError = ''
   settingsError = ''
+  afterPunch = undefined
   window.history.replaceState({}, '', `/?reference_date=${date}`)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   vi.spyOn(window, 'alert').mockImplementation(() => undefined)
@@ -76,6 +78,14 @@ beforeEach(() => {
       return importError ? json({ error: importError }, 400) : json({ version: 3, entries: 1 })
     }
     if (path.startsWith('/api/entries/') && entryError) return json({ error: entryError }, 400)
+    if (path.startsWith('/api/entries/') && init?.method === 'PUT') {
+      afterPunch?.()
+      return json({ ok: true })
+    }
+    if (path === '/api/clock-out' || path === '/api/clock-in') {
+      afterPunch?.()
+      return json({ date })
+    }
     // Allow the original interface to render so red exposes its client-side calculation.
     if (path === '/api/entries') return json({})
     if (path === '/api/preferences') return json({ theme: 'teal' })
@@ -134,6 +144,67 @@ it('saves cross-midnight punches and retains inputs when saving fails', async ()
   expect(screen.getByRole('button', { name: '下班 · Out' })).toHaveTextContent('07:40')
   expect(JSON.parse(requests.find(r => r.path === `/api/entries/${date}`)!.init!.body as string))
     .toEqual({ start_time: '22:10', end_time: '07:40' })
+  expect(window.alert).not.toHaveBeenCalled()
+})
+
+it.each([
+  { minutes: 390, compliant: false, warning: '净工时为 6.5 小时，不足 8 小时，还差 1h 30m。' },
+  { minutes: 479, compliant: false, warning: '净工时为 7.98 小时，不足 8 小时，还差 1m。' },
+  { minutes: 0, compliant: false, warning: '净工时为 0 小时，不足 8 小时，还差 8h。' },
+  { minutes: 480, compliant: true, warning: '' },
+  { minutes: 481, compliant: true, warning: '' },
+  { minutes: null, compliant: null, warning: '' },
+])('uses refreshed server compliance after saving ($minutes minutes)', async ({ minutes, compliant, warning }) => {
+  // The result must come from the refresh, not from the previously displayed record.
+  dashboard.days[7].actual_minutes = 200
+  dashboard.days[7].compliant = false
+  afterPunch = () => {
+    dashboard.days[7].actual_minutes = minutes
+    dashboard.days[7].compliant = compliant
+  }
+  render(<App />)
+  await openDateEditor(date)
+  fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  if (warning) {
+    expect(window.alert).toHaveBeenCalledExactlyOnceWith(`${date} 打卡记录已保存。\n${warning}`)
+  } else {
+    expect(window.alert).not.toHaveBeenCalled()
+  }
+  expect(requests.filter(r => r.path === `/api/entries/${date}` && r.init?.method === 'PUT')).toHaveLength(1)
+})
+
+it('warns for the clock-out date even when viewing a different date', async () => {
+  window.history.replaceState({}, '', '/?reference_date=2026-09-09')
+  afterPunch = () => {
+    dashboard.days[7].actual_minutes = 390
+    dashboard.days[7].compliant = false
+  }
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '现在下班' }))
+  expect(await screen.findByRole('status')).toHaveTextContent('已记录当前下班时间')
+  expect(screen.getByLabelText('查看日期')).toHaveValue(date)
+  expect(window.alert).toHaveBeenCalledExactlyOnceWith(`${date} 打卡记录已保存。\n净工时为 6.5 小时，不足 8 小时，还差 1h 30m。`)
+})
+
+it('does not warn on clock-in even when a saved record is below the minimum', async () => {
+  dashboard.days[7].actual_minutes = 390
+  dashboard.days[7].compliant = false
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '现在上班' }))
+  expect(await screen.findByRole('status')).toHaveTextContent('已记录当前上班时间')
+  expect(window.alert).not.toHaveBeenCalled()
+})
+
+it('reports a failed post-save refresh without issuing an unverified minimum-hours warning', async () => {
+  dashboard.days[7].actual_minutes = 390
+  dashboard.days[7].compliant = false
+  afterPunch = () => { dashboardError = '刷新失败' }
+  render(<App />)
+  await openDateEditor(date)
+  fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('操作已完成，但重新读取失败')
+  expect(window.alert).not.toHaveBeenCalled()
 })
 
 it('sets leave independently without overwriting preserved punches', async () => {
