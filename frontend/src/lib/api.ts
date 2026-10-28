@@ -1,4 +1,4 @@
-import type { AirQualityResult, CalendarKind, DashboardData, Entry, Interval, Period, Preview, Theme, WeatherResult } from './types'
+import type { AirQualityResult, CalendarKind, ClockLimits, DashboardData, Entry, Interval, Period, Preview, Theme, WeatherResult } from './types'
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -31,7 +31,7 @@ export const deleteEntry = (date: string) =>
   request<void>('/api/entries/' + encodeURIComponent(date), { method: 'DELETE' })
 export const setLeave = (date: string, enabled: boolean) =>
   request<void>('/api/leaves/' + encodeURIComponent(date), json('PUT', { enabled }))
-export const putSettings = (settings: { period?: Period; theme?: Theme }) =>
+export const putSettings = (settings: { period?: Period; theme?: Theme } & Partial<ClockLimits>) =>
   request<void>('/api/settings', json('PUT', settings))
 export const setCalendar = (date: string, kind: CalendarKind | null) => request<void>(
   '/api/calendar/' + encodeURIComponent(date), kind ? json('PUT', { kind }) : { method: 'DELETE' },

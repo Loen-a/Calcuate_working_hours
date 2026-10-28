@@ -71,10 +71,13 @@ export default function App() {
       }
       if (kind === 'entry' || kind === 'clock-out') {
         const recorded = next.days.find(day => day.date === next.selected_date)
+        const warnings: string[] = []
         if (recorded?.compliant === false && recorded.actual_minutes != null) {
           const minimum = next.settings.minimum_minutes_per_day
-          window.alert(`${recorded.date} 打卡记录已保存。\n净工时为 ${fmtDecimalHours(recorded.actual_minutes)} 小时，不足 ${fmtDecimalHours(minimum)} 小时，还差 ${fmtMinutes(minimum - recorded.actual_minutes)}。`)
+          warnings.push(`净工时为 ${fmtDecimalHours(recorded.actual_minutes)} 小时，不足 ${fmtDecimalHours(minimum)} 小时，还差 ${fmtMinutes(minimum - recorded.actual_minutes)}。`)
         }
+        if (recorded?.before_earliest_end) warnings.push(`实际下班时间早于设定的最早下班打卡时间 ${next.settings.earliest_end_time}。`)
+        if (warnings.length) window.alert(`${recorded!.date} 打卡记录已保存。\n${warnings.join('\n')}`)
       }
       return result
     } finally { busyRef.current = null; setBusyKind(null) }
@@ -146,6 +149,7 @@ export default function App() {
         </div>}
         <TrendChart days={data.days} />
         <Settings data={data} busy={busy} onPeriod={async period => { await mutate('settings', () => api.putSettings({ period })) }}
+          onClockLimits={async limits => { await mutate('settings', () => api.putSettings(limits)); setNotice('打卡时间限制已保存') }}
           onSave={async interval => { await mutate('interval', () => api.saveInterval(interval)) }} onDelete={async id => { await mutate('interval', () => api.deleteInterval(id)) }} />
         <div className="workhours-calendar-source workhours-help mt-6 text-center text-[12px] text-ink-soft font-mono leading-relaxed">
           <p>{holiday.year} 年节假日 · {sourceLabel} · 数据保存在本地数据库</p>

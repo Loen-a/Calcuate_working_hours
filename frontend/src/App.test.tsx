@@ -5,7 +5,8 @@ import App from './App'
 const date = '2026-09-08'
 const makeDashboard = () => ({
   today: date, selected_date: date, theme: 'teal',
-  settings: { period: 'month', target_minutes_per_day: 540, minimum_minutes_per_day: 480 },
+  settings: { period: 'month', target_minutes_per_day: 540, minimum_minutes_per_day: 480,
+    earliest_start_time: null as string | null, earliest_end_time: null as string | null },
   intervals: [{ interval_id: 1, name: '午休', start_time: '12:00', end_time: '13:00', enabled: true }],
   days: Array.from({ length: 30 }, (_, i) => ({
     date: `2026-09-${String(i + 1).padStart(2, '0')}`, is_workday: true, leave: false,
@@ -13,7 +14,7 @@ const makeDashboard = () => ({
     entry: i === 7 ? { start_time: '10:13', end_time: null as string | null } : null,
     actual_minutes: null as number | null, daily_balance_minutes: null, cumulative_balance_minutes: null,
     balance_before_minutes: -37, required_minutes: 577, recommended_minutes: 600,
-    suggested_end: '21:17', suggested_end_day_offset: 0, reason: 'balance', compliant: null as boolean | null,
+    suggested_end: '21:17', suggested_end_day_offset: 0, reason: 'balance', compliant: null as boolean | null, before_earliest_end: false,
   })),
   selected_preview: { available: true, required_minutes: 577, required_label: '9 小时 37 分钟',
     balance_before_minutes: -37, balance_label: '-37 分钟', reason_label: '补足历史欠时',
@@ -71,6 +72,9 @@ beforeEach(() => {
       if (settingsError) return json({ error: settingsError }, 400)
       const settings = JSON.parse(init.body as string)
       if (settings.theme) dashboard.theme = settings.theme
+      for (const key of ['earliest_start_time', 'earliest_end_time'] as const) {
+        if (key in settings) dashboard.settings[key] = settings[key]
+      }
       return json({ ok: true })
     }
     if (path === '/preview/earliest-end') return json(dashboard.selected_preview)
@@ -194,6 +198,81 @@ it('does not warn on clock-in even when a saved record is below the minimum', as
   fireEvent.click(await screen.findByRole('button', { name: '现在上班' }))
   expect(await screen.findByRole('status')).toHaveTextContent('已记录当前上班时间')
   expect(window.alert).not.toHaveBeenCalled()
+})
+
+it.each(['save', 'clock-out'])('warns on an early departure even with eight net hours (%s)', async action => {
+  dashboard.settings.earliest_end_time = '17:00'
+  afterPunch = () => {
+    dashboard.days[7].actual_minutes = 480
+    dashboard.days[7].compliant = true
+    dashboard.days[7].before_earliest_end = true
+  }
+  render(<App />)
+  if (action === 'save') {
+    await openDateEditor(date)
+    fireEvent.click(await screen.findByRole('button', { name: '保存打卡' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  } else {
+    fireEvent.click(await screen.findByRole('button', { name: '现在下班' }))
+    await screen.findByRole('status')
+  }
+  expect(window.alert).toHaveBeenCalledExactlyOnceWith(`${date} 打卡记录已保存。\n实际下班时间早于设定的最早下班打卡时间 17:00。`)
+})
+
+it('combines short-hours and early-departure warnings in one dialog', async () => {
+  dashboard.settings.earliest_end_time = '17:00'
+  afterPunch = () => {
+    dashboard.days[7].actual_minutes = 390
+    dashboard.days[7].compliant = false
+    dashboard.days[7].before_earliest_end = true
+  }
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: '现在下班' }))
+  await screen.findByRole('status')
+  expect(window.alert).toHaveBeenCalledTimes(1)
+  expect(vi.mocked(window.alert).mock.calls[0][0]).toContain('不足 8 小时')
+  expect(vi.mocked(window.alert).mock.calls[0][0]).toContain('最早下班打卡时间 17:00')
+})
+
+it('saves nullable clock limits and clears each limit independently', async () => {
+  render(<App />)
+  fireEvent.click(await screen.findByText('统计周期、打卡限制与非工作时段'))
+  const start = screen.getByLabelText('最早上班打卡时间')
+  const end = screen.getByLabelText('最早下班打卡时间')
+  expect(start).toHaveValue('')
+  expect(end).toHaveValue('')
+  fireEvent.change(start, { target: { value: '08:30' } })
+  fireEvent.change(end, { target: { value: '17:00' } })
+  fireEvent.click(screen.getByRole('button', { name: '保存打卡时间限制' }))
+  await screen.findByText('打卡时间限制已保存')
+  expect(dashboard.settings.earliest_start_time).toBe('08:30')
+  expect(dashboard.settings.earliest_end_time).toBe('17:00')
+  fireEvent.click(screen.getByRole('button', { name: '清空最早上班打卡时间' }))
+  fireEvent.click(screen.getByRole('button', { name: '保存打卡时间限制' }))
+  await waitFor(() => expect(dashboard.settings.earliest_start_time).toBeNull())
+  await waitFor(() => expect(screen.getByRole('button', { name: '保存打卡时间限制' })).toBeEnabled())
+  expect(end).toHaveValue('17:00')
+  fireEvent.click(screen.getByRole('button', { name: '清空最早下班打卡时间' }))
+  fireEvent.click(screen.getByRole('button', { name: '保存打卡时间限制' }))
+  await waitFor(() => expect(dashboard.settings.earliest_end_time).toBeNull())
+  expect(requests.filter(r => r.path === '/api/settings').map(r => JSON.parse(r.init!.body as string))).toEqual([
+    { earliest_start_time: '08:30', earliest_end_time: '17:00' },
+    { earliest_start_time: null, earliest_end_time: '17:00' },
+    { earliest_start_time: null, earliest_end_time: null },
+  ])
+})
+
+it('preserves edited limits and saved settings when saving fails', async () => {
+  dashboard.settings.earliest_end_time = '17:00'
+  settingsError = '设置保存失败'
+  render(<App />)
+  fireEvent.click(await screen.findByText('统计周期、打卡限制与非工作时段'))
+  fireEvent.change(screen.getByLabelText('最早下班打卡时间'), { target: { value: '18:00' } })
+  fireEvent.click(screen.getByRole('button', { name: '保存打卡时间限制' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('设置保存失败')
+  expect(screen.getByLabelText('最早下班打卡时间')).toHaveValue('18:00')
+  expect(dashboard.settings.earliest_end_time).toBe('17:00')
+  expect(screen.getByRole('button', { name: '保存打卡时间限制' })).toBeEnabled()
 })
 
 it('reports a failed post-save refresh without issuing an unverified minimum-hours warning', async () => {

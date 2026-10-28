@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import type { DashboardData, Interval, Period } from '../lib/types'
+import { useEffect, useState } from 'react'
+import type { ClockLimits, DashboardData, Interval, Period } from '../lib/types'
 import { fmtMinutes } from '../lib/format'
 
 type Draft = Omit<Interval, 'interval_id'> & { interval_id?: number }
 interface Props {
   data: DashboardData; busy: boolean
   onPeriod: (period: Period) => Promise<void>
+  onClockLimits: (limits: ClockLimits) => Promise<void>
   onSave: (interval: Draft) => Promise<void>
   onDelete: (id: number) => Promise<void>
 }
@@ -43,10 +44,48 @@ function IntervalForm({ interval, busy, onSave, onDelete }: {
     {error && <p role="alert" className="text-[13px] text-plum mt-2">{error}</p>}
   </form>
 }
-export default function Settings({ data, busy, onPeriod, onSave, onDelete }: Props) {
+function ClockLimitForm({ limits, busy, onSave }: {
+  limits: ClockLimits; busy: boolean; onSave: (limits: ClockLimits) => Promise<void>
+}) {
+  const [start, setStart] = useState(limits.earliest_start_time || '')
+  const [end, setEnd] = useState(limits.earliest_end_time || '')
+  const [error, setError] = useState('')
+  useEffect(() => {
+    setStart(limits.earliest_start_time || '')
+    setEnd(limits.earliest_end_time || '')
+  }, [limits.earliest_start_time, limits.earliest_end_time])
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault(); setError('')
+    try { await onSave({ earliest_start_time: start || null, earliest_end_time: end || null }) }
+    catch (error) { setError(error instanceof Error ? error.message : String(error)) }
+  }
+  return <form onSubmit={event => void save(event)} className="border-t border-rule pt-4 mt-4">
+    <fieldset disabled={busy} className="flex flex-wrap items-end gap-5">
+      <div>
+        <label className="workhours-label block text-ink-soft" htmlFor="earliest-start">最早上班打卡时间</label>
+        <div className="flex items-center gap-2 mt-2">
+          <input id="earliest-start" type="time" step="60" value={start} onChange={event => setStart(event.target.value)} className="p-2 bg-paper border border-rule rounded-sm text-ink" />
+          <button type="button" aria-label="清空最早上班打卡时间" disabled={!start || busy} onClick={() => setStart('')} className="text-ink-soft disabled:opacity-40">清空</button>
+        </div>
+      </div>
+      <div>
+        <label className="workhours-label block text-ink-soft" htmlFor="earliest-end">最早下班打卡时间</label>
+        <div className="flex items-center gap-2 mt-2">
+          <input id="earliest-end" type="time" step="60" value={end} onChange={event => setEnd(event.target.value)} className="p-2 bg-paper border border-rule rounded-sm text-ink" />
+          <button type="button" aria-label="清空最早下班打卡时间" disabled={!end || busy} onClick={() => setEnd('')} className="text-ink-soft disabled:opacity-40">清空</button>
+        </div>
+      </div>
+      <button type="submit" className="border border-rule rounded-sm px-3 py-2">保存打卡时间限制</button>
+    </fieldset>
+    <p className="workhours-help text-ink-soft mt-3">留空表示不限制。早到从设定时间开始计工时；预测下班时间不早于设定时间。保存后重新计算已有记录，原始打卡时间保留。</p>
+    {error && <p role="alert" className="text-plum text-[13px] mt-2">{error}</p>}
+  </form>
+}
+
+export default function Settings({ data, busy, onPeriod, onClockLimits, onSave, onDelete }: Props) {
   const [error, setError] = useState('')
   return <details className="mt-8 bg-surface border border-rule rounded-sm p-5">
-    <summary className="workhours-section-title cursor-pointer font-mono text-[13px] text-ink-soft tracking-wide">统计周期与非工作时段</summary>
+    <summary className="workhours-section-title cursor-pointer font-mono text-[13px] text-ink-soft tracking-wide">统计周期、打卡限制与非工作时段</summary>
     <div className="mt-5 flex flex-wrap gap-4 items-center justify-between">
       <label className="workhours-label text-[13px]">统计周期
         <select aria-label="统计周期" value={data.settings.period} disabled={busy} className="ml-3 bg-paper border border-rule rounded-sm p-2 text-[13px]" onChange={event => {
@@ -56,6 +95,7 @@ export default function Settings({ data, busy, onPeriod, onSave, onDelete }: Pro
       <p className="workhours-help text-[12px] text-ink-soft">每天目标 {fmtMinutes(data.settings.target_minutes_per_day)} · 最低 {fmtMinutes(data.settings.minimum_minutes_per_day)}</p>
     </div>
     {error && <p role="alert" className="text-plum text-[13px] mt-2">{error}</p>}
+    <ClockLimitForm limits={data.settings} busy={busy} onSave={onClockLimits} />
     <p className="workhours-help text-[12px] text-ink-soft mt-4">启用的时段从打卡时长中扣除；修改后会重新计算已有记录。</p>
     {data.intervals.map(interval => <IntervalForm key={JSON.stringify(interval)} interval={interval} busy={busy} onSave={onSave} onDelete={onDelete} />)}
     <IntervalForm busy={busy} onSave={onSave} onDelete={onDelete} />

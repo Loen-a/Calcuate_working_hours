@@ -26,6 +26,7 @@ export interface Day {
   suggested_end_day_offset: number | null
   reason: string
   compliant: boolean | null
+  before_earliest_end: boolean
 }
 export interface Preview {
   available: boolean
@@ -38,11 +39,15 @@ export interface Preview {
   suggested_end_label?: string
   day_offset?: number | null
 }
+export interface ClockLimits {
+  earliest_start_time: string | null
+  earliest_end_time: string | null
+}
 export interface DashboardData {
   today: string
   selected_date: string
   theme: Theme
-  settings: { period: Period; target_minutes_per_day: number; minimum_minutes_per_day: number }
+  settings: { period: Period; target_minutes_per_day: number; minimum_minutes_per_day: number } & ClockLimits
   intervals: Interval[]
   days: Day[]
   selected_preview: Preview

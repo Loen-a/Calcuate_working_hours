@@ -43,6 +43,8 @@ class ForecastSettings:
     non_working_intervals: tuple[NonWorkingInterval, ...] = (
         default_non_working_intervals()
     )
+    earliest_start_time: time | None = None
+    earliest_end_time: time | None = None
 
 
 @dataclass(frozen=True)
@@ -135,6 +137,7 @@ def period_workdays(
 def effective_minutes(
     entry: WorkEntry,
     non_working_intervals: Iterable[NonWorkingInterval],
+    earliest_start_time: time | None = None,
 ) -> int | None:
     if entry.start is None or entry.end is None:
         return None
@@ -143,6 +146,13 @@ def effective_minutes(
     end_dt = datetime.combine(entry.work_date, entry.end)
     if end_dt < start_dt:
         end_dt += timedelta(days=1)
+
+    # Resolve the real end date before clamping the effective start. An early
+    # same-day departure must not turn into an overnight shift after clamping.
+    if earliest_start_time is not None:
+        start_dt = max(start_dt, datetime.combine(entry.work_date, earliest_start_time))
+    if end_dt <= start_dt:
+        return 0
 
     excluded_minutes = 0
     merged_intervals = _merged_enabled_intervals(non_working_intervals)
@@ -161,6 +171,15 @@ def effective_minutes(
 
     attendance_minutes = int((end_dt - start_dt).total_seconds() // 60)
     return max(attendance_minutes - excluded_minutes, 0)
+
+
+def ends_before_limit(entry: WorkEntry, earliest_end_time: time | None) -> bool:
+    if earliest_end_time is None or entry.start is None or entry.end is None:
+        return False
+    end_dt = datetime.combine(entry.work_date, entry.end)
+    if entry.end < entry.start:
+        end_dt += timedelta(days=1)
+    return end_dt < datetime.combine(entry.work_date, earliest_end_time)
 
 
 def build_forecast(
@@ -323,7 +342,7 @@ def _actual_minutes(
     entry = entries.get(work_date)
     if entry is None:
         return None
-    return effective_minutes(entry, settings.non_working_intervals)
+    return effective_minutes(entry, settings.non_working_intervals, settings.earliest_start_time)
 
 
 def _completed_minutes(
@@ -404,11 +423,15 @@ def _suggested_end(
         return None
 
     start_dt = datetime.combine(entry.work_date, entry.start)
+    if settings.earliest_start_time is not None:
+        start_dt = max(start_dt, datetime.combine(entry.work_date, settings.earliest_start_time))
     end_dt = _advance_work_minutes(
         start_dt,
         recommended_minutes,
         settings.non_working_intervals,
     )
+    if settings.earliest_end_time is not None:
+        end_dt = max(end_dt, datetime.combine(entry.work_date, settings.earliest_end_time))
     end_time = end_dt.time().replace(second=0, microsecond=0)
     day_offset = (end_dt.date() - start_dt.date()).days
     return end_time, day_offset

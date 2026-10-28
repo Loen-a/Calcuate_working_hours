@@ -66,16 +66,19 @@ def build_backup(store: WorkHoursStore) -> dict[str, Any]:
             )
         }
 
+    exported_settings = {"period": settings.get("period", "week"), "theme": settings.get("theme", "cool")}
+    # Unrestricted exports keep the original v3 shape. Older clients reject
+    # configured limits as unknown fields instead of silently losing the rules.
+    limit_keys = ("earliest_start_time", "earliest_end_time")
+    if any(settings.get(key) for key in limit_keys):
+        exported_settings.update({key: settings.get(key) or None for key in limit_keys})
     return {
         "version": 3,
         "exportedAt": datetime.now(timezone.utc).isoformat(
             timespec="milliseconds"
         ).replace("+00:00", "Z"),
         "entries": entries,
-        "settings": {
-            "period": settings.get("period", "week"),
-            "theme": settings.get("theme", "cool"),
-        },
+        "settings": exported_settings,
         "nonWorkingIntervals": intervals,
         "calendarOverrides": overrides,
         "leaveDays": leave_days,
@@ -310,9 +313,13 @@ def _validate_backup(raw: object) -> dict:
     result = {"version": version, "entries": entries, "leaveDays": leave_days}
 
     if version == 3:
-        settings = _fields(value["settings"], {"period", "theme"}, "settings")
+        limit_keys = {"earliest_start_time", "earliest_end_time"}
+        settings = dict(_fields(value["settings"], {"period", "theme"}, "settings", limit_keys))
         if settings["period"] not in ("week", "month"):
             raise InvalidBackup("settings.period 必须是 week 或 month。")
+        for key in limit_keys:
+            # A historical v3 backup represents unrestricted clock times.
+            settings[key] = _time(settings.get(key), f"settings.{key}", nullable=True) or ""
         result["nonWorkingIntervals"] = _validate_intervals(value["nonWorkingIntervals"])
         overrides = _object(value["calendarOverrides"], "calendarOverrides")
         for day, kind in overrides.items():

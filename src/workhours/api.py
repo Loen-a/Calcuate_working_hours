@@ -12,7 +12,7 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 
 from workhours.backup import build_backup, restore_backup
 from workhours.domain import (
-    DayOverride, NonWorkingInterval, PeriodMode, WorkEntry, effective_minutes, is_workday,
+    DayOverride, NonWorkingInterval, WorkEntry, effective_minutes, ends_before_limit, is_workday,
 )
 from workhours.storage import THEMES
 from workhours.web import (
@@ -80,7 +80,7 @@ def _historical_average_minutes(store, settings, holiday_status) -> float | None
                 overrides[work_date] = DayOverride.HOLIDAY if auto["isOffDay"] else DayOverride.WORKDAY
         if not is_workday(work_date, overrides):
             continue
-        actual = effective_minutes(entry, settings.non_working_intervals)
+        actual = effective_minutes(entry, settings.non_working_intervals, settings.earliest_start_time)
         if actual is not None:
             total_minutes += actual
             recorded_days += 1
@@ -128,6 +128,7 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
             "suggested_end_day_offset": item.suggested_end_day_offset if item else None,
             "reason": item.reason if item else ("leave" if current in leaves else "rest"),
             "compliant": item.compliant if item else None,
+            "before_earliest_end": bool(item and entry and ends_before_limit(entry, settings.earliest_end_time)),
         })
         if current == context["month_end"]:
             break
@@ -137,7 +138,9 @@ def dashboard_payload(store, today: date, selected_date: date) -> dict:
         "theme": store.get_theme(),
         "settings": {"period": settings.period.value,
                      "target_minutes_per_day": settings.target_minutes_per_day,
-                     "minimum_minutes_per_day": settings.minimum_minutes_per_day},
+                     "minimum_minutes_per_day": settings.minimum_minutes_per_day,
+                     "earliest_start_time": _stamp(settings.earliest_start_time),
+                     "earliest_end_time": _stamp(settings.earliest_end_time)},
         "intervals": [{"interval_id": interval.interval_id, "name": interval.name,
                        "start_time": _stamp(interval.start), "end_time": _stamp(interval.end),
                        "enabled": interval.enabled} for interval in settings.non_working_intervals],
@@ -277,17 +280,19 @@ def register_api(app, store, today_provider, now_provider) -> None:
 
     @app.put("/api/settings")
     def put_settings():
-        body = _body({"period", "theme"})
+        body = _body({"period", "theme", "earliest_start_time", "earliest_end_time"})
         if not body:
             raise ValueError("请选择需要修改的设置")
         if "period" in body and body["period"] not in ("week", "month"):
             raise ValueError("统计周期只能为 week 或 month")
         if "theme" in body and body["theme"] not in THEMES:
             raise ValueError("不支持的界面风格，请重新选择。")
-        if "period" in body:
-            store.set_period(PeriodMode(body["period"]))
-        if "theme" in body:
-            store.set_theme(body["theme"])
+        # Validate every field before writing; save a pair of limits atomically.
+        updates = {key: value for key, value in body.items() if key in {"period", "theme"}}
+        for key in ("earliest_start_time", "earliest_end_time"):
+            if key in body:
+                updates[key] = _stamp(_time(body[key])) or ""
+        store._set_settings(updates)
         return jsonify(ok=True)
 
     @app.post("/api/non-working-intervals")

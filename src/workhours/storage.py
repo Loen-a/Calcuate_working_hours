@@ -33,6 +33,8 @@ class WorkHoursStore:
         return ForecastSettings(
             period=PeriodMode(period),
             non_working_intervals=tuple(self.list_non_working_intervals()),
+            earliest_start_time=_parse_time(self._get_setting("earliest_start_time", "")),
+            earliest_end_time=_parse_time(self._get_setting("earliest_end_time", "")),
         )
 
     def set_period(self, period: PeriodMode) -> None:
@@ -293,14 +295,17 @@ class WorkHoursStore:
         return row["value"] if row else default
 
     def _set_setting(self, key: str, value: str) -> None:
+        self._set_settings({key: value})
+
+    def _set_settings(self, values: dict[str, str]) -> None:
         with self._connect() as connection:
-            connection.execute(
+            connection.executemany(
                 """
                 INSERT INTO settings (key, value)
                 VALUES (?, ?)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value
                 """,
-                (key, value),
+                list(values.items()),
             )
 
     def _init_schema(self) -> None:

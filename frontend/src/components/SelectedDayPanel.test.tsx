@@ -8,7 +8,7 @@ const day: Day = {
   entry: { start_time: '08:17', end_time: '19:03' }, actual_minutes: 475,
   daily_balance_minutes: -65, cumulative_balance_minutes: -37, balance_before_minutes: 28,
   required_minutes: null, recommended_minutes: null, suggested_end: null,
-  suggested_end_day_offset: null, reason: 'recorded', compliant: false,
+  suggested_end_day_offset: null, reason: 'recorded', compliant: false, before_earliest_end: false,
 }
 const preview: Preview = {
   available: true, required_minutes: 577, balance_before_minutes: -37,

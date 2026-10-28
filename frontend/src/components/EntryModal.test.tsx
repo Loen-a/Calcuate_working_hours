@@ -11,7 +11,7 @@ const day: Day = {
   date: '2026-09-08', is_workday: true, leave: false, calendar_name: '工作日', manual_override: null,
   entry: { start_time: '08:17', end_time: null }, actual_minutes: null, daily_balance_minutes: null,
   cumulative_balance_minutes: null, balance_before_minutes: 0, required_minutes: 540,
-  recommended_minutes: 540, suggested_end: '18:47', suggested_end_day_offset: 0, reason: '', compliant: null,
+  recommended_minutes: 540, suggested_end: '18:47', suggested_end_day_offset: 0, reason: '', compliant: null, before_earliest_end: false,
 }
 const preview = { available: true, suggested_end: '18:47', required_label: '9 小时' }
 const callbacks = () => ({ externalBusy: false, onClose: vi.fn(), onSave: vi.fn().mockResolvedValue(undefined),

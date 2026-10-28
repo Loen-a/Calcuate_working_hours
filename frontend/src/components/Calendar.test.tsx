@@ -7,7 +7,7 @@ const restDay: Day = {
   date: '2026-09-06', is_workday: false, leave: false, calendar_name: '休息日', manual_override: null,
   entry: { start_time: '08:00', end_time: '18:30' }, actual_minutes: null, daily_balance_minutes: null,
   cumulative_balance_minutes: null, balance_before_minutes: 0, required_minutes: null,
-  recommended_minutes: null, suggested_end: null, suggested_end_day_offset: null, reason: '', compliant: null,
+  recommended_minutes: null, suggested_end: null, suggested_end_day_offset: null, reason: '', compliant: null, before_earliest_end: false,
 }
 it('identifies a complete uncounted rest-day record without requesting more punches', () => {
   render(<Calendar selected={restDay.date} today={restDay.date} days={[restDay]} busy={false} onPick={vi.fn()} />)
